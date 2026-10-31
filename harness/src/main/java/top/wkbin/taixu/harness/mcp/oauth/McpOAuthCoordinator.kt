@@ -31,6 +31,7 @@ import top.wkbin.taixu.core.model.McpAuthState
 class McpOAuthCoordinator(
     private val credentials: McpOAuthCredentialRepository,
     private val client: OkHttpClient,
+    private val discovery: McpOAuthDiscovery = McpOAuthDiscovery(OkHttpClient()),
 ) {
     private val locks = ConcurrentHashMap<String, Mutex>()
     private val _states = MutableStateFlow<Map<String, McpAuthState>>(emptyMap())
@@ -38,11 +39,11 @@ class McpOAuthCoordinator(
 
     suspend fun begin(server: McpServerConfig, now: Long = System.currentTimeMillis()): String {
         require(server.authMode == McpAuthMode.OAUTH) { "MCP 服务未配置 OAuth" }
-        require(server.oauthClientId.isNotBlank()) { "OAuth client_id 未配置" }
-        require(server.oauthAuthorizationEndpoint.isNotBlank()) { "OAuth authorization endpoint 未配置" }
-        require(server.oauthTokenEndpoint.isNotBlank()) { "OAuth token endpoint 未配置" }
-        OAuthEndpointPolicy.requireSecure(server.oauthAuthorizationEndpoint)
-        OAuthEndpointPolicy.requireSecure(server.oauthTokenEndpoint)
+        // RFC 9728/8414 发现 + RFC 7591 DCR：只填空白字段，手动配置优先；不可预配时给出可行动错误。
+        val provisioned = provision(server)
+        val effective = provisioned.config
+        OAuthEndpointPolicy.requireSecure(effective.oauthAuthorizationEndpoint)
+        OAuthEndpointPolicy.requireSecure(effective.oauthTokenEndpoint)
         _states.value = _states.value + (server.id to McpAuthState.Authorizing)
         val state = OAuthPkce.randomState()
         val verifier = OAuthPkce.codeVerifier()
@@ -51,26 +52,69 @@ class McpOAuthCoordinator(
                 state = state,
                 serverId = server.id,
                 codeVerifier = verifier,
-                redirectUri = server.oauthRedirectUri,
-                clientId = server.oauthClientId,
-                authorizationEndpoint = server.oauthAuthorizationEndpoint,
-                tokenEndpoint = server.oauthTokenEndpoint,
-                resource = server.oauthResource.takeIf { it.isNotBlank() },
+                redirectUri = effective.oauthRedirectUri,
+                clientId = effective.oauthClientId,
+                clientSecret = provisioned.clientSecret,
+                authorizationEndpoint = effective.oauthAuthorizationEndpoint,
+                tokenEndpoint = effective.oauthTokenEndpoint,
+                resource = effective.oauthResource.takeIf { it.isNotBlank() },
                 createdAt = now,
                 expiresAt = now + TRANSACTION_TTL_MS,
             ),
         )
-        return Uri.parse(server.oauthAuthorizationEndpoint).buildUpon()
+        return Uri.parse(effective.oauthAuthorizationEndpoint).buildUpon()
             .appendQueryParameter("response_type", "code")
-            .appendQueryParameter("client_id", server.oauthClientId)
-            .appendQueryParameter("redirect_uri", server.oauthRedirectUri)
+            .appendQueryParameter("client_id", effective.oauthClientId)
+            .appendQueryParameter("redirect_uri", effective.oauthRedirectUri)
             .appendQueryParameter("code_challenge", OAuthPkce.challenge(verifier))
             .appendQueryParameter("code_challenge_method", "S256")
             .appendQueryParameter("state", state)
-            .apply { server.oauthScope.takeIf { it.isNotBlank() }?.let { appendQueryParameter("scope", it) } }
-            .apply { server.oauthResource.takeIf { it.isNotBlank() }?.let { appendQueryParameter("resource", it) } }
+            .apply { effective.oauthScope.takeIf { it.isNotBlank() }?.let { appendQueryParameter("scope", it) } }
+            .apply { effective.oauthResource.takeIf { it.isNotBlank() }?.let { appendQueryParameter("resource", it) } }
             .build()
             .toString()
+    }
+
+    /**
+     * 自动预配（RFC 9728 → RFC 8414 → RFC 7591）：
+     * 手动配置的字段优先；缺失字段从受保护资源元数据与授权服务器元数据发现，
+     * client_id 缺失时向 registration_endpoint 动态注册（公共客户端 + PKCE）。
+     * 服务器未暴露发现端点且手动字段不全时抛可行动的 IllegalStateException。
+     */
+    internal suspend fun provision(server: McpServerConfig): Provisioned {
+        if (server.oauthClientId.isNotBlank() && server.oauthAuthorizationEndpoint.isNotBlank() && server.oauthTokenEndpoint.isNotBlank()) {
+            return Provisioned(server, clientSecret = null)
+        }
+        val protectedResource = runCatching { discovery.discoverProtectedResource(server.serverUrl) }.getOrNull()
+        val authServer = protectedResource?.authorizationServers?.firstOrNull() ?: server.serverUrl
+        val metadata = runCatching { discovery.discoverAuthorizationServer(authServer) }.getOrNull()
+        var effective = server
+        if (effective.oauthAuthorizationEndpoint.isBlank()) {
+            effective = effective.copy(oauthAuthorizationEndpoint = metadata?.authorizationEndpoint.orEmpty())
+        }
+        if (effective.oauthTokenEndpoint.isBlank()) {
+            effective = effective.copy(oauthTokenEndpoint = metadata?.tokenEndpoint.orEmpty())
+        }
+        if (effective.oauthResource.isBlank()) {
+            effective = effective.copy(oauthResource = protectedResource?.resource.orEmpty())
+        }
+        if (effective.oauthScope.isBlank()) {
+            effective = effective.copy(oauthScope = metadata?.scopesSupported.orEmpty().joinToString(" "))
+        }
+        check(effective.oauthAuthorizationEndpoint.isNotBlank() && effective.oauthTokenEndpoint.isNotBlank()) {
+            "该服务未暴露 OAuth 发现端点，请手动填写 client_id 与 authorization/token endpoint"
+        }
+        var clientSecret: String? = null
+        if (effective.oauthClientId.isBlank()) {
+            val registrationEndpoint = metadata?.registrationEndpoint?.takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException("服务器未开放动态客户端注册（RFC 7591），请手动配置 client_id")
+            val registered = runCatching {
+                discovery.registerClient(registrationEndpoint, effective.oauthRedirectUri, CLIENT_NAME, effective.oauthScope.takeIf { it.isNotBlank() })
+            }.getOrNull() ?: throw IllegalStateException("动态客户端注册失败，请手动配置 client_id")
+            effective = effective.copy(oauthClientId = registered.clientId)
+            clientSecret = registered.clientSecret
+        }
+        return Provisioned(effective, clientSecret)
     }
 
     suspend fun callback(uri: Uri, now: Long = System.currentTimeMillis()): CallbackResult {
@@ -118,6 +162,7 @@ class McpOAuthCoordinator(
                     authorizationServer = null,
                     tokenEndpoint = transaction.tokenEndpoint,
                     clientId = transaction.clientId,
+                    clientSecret = transaction.clientSecret,
                     resource = transaction.resource,
                     credentialRevision = now,
                 ),
@@ -146,6 +191,7 @@ class McpOAuthCoordinator(
                 .add("grant_type", "refresh_token")
                 .add("refresh_token", refreshToken)
                 .add("client_id", current.clientId)
+                .apply { current.clientSecret?.takeIf { it.isNotBlank() }?.let { add("client_secret", it) } }
                 .apply { current.resource?.let { add("resource", it) } }
                 .build()
             val request = Request.Builder().url(endpoint).post(body).build()
@@ -187,6 +233,7 @@ class McpOAuthCoordinator(
             .add("redirect_uri", transaction.redirectUri)
             .add("client_id", transaction.clientId)
             .add("code_verifier", transaction.codeVerifier)
+            .apply { transaction.clientSecret?.takeIf { it.isNotBlank() }?.let { add("client_secret", it) } }
             .apply { transaction.resource?.let { add("resource", it) } }
             .build()
         OAuthEndpointPolicy.requireSecure(transaction.tokenEndpoint)
@@ -247,8 +294,12 @@ class McpOAuthCoordinator(
         data class Cancelled(val reason: String) : CallbackResult
     }
 
+    /** 自动预配结果：补全后的配置 + DCR 可能签发的客户端密钥（仅存事务/凭据表，不回写服务配置）。 */
+    internal data class Provisioned(val config: McpServerConfig, val clientSecret: String?)
+
     companion object {
         const val TRANSACTION_TTL_MS = 10 * 60 * 1000L
         const val REFRESH_SKEW_MS = 30_000L
+        const val CLIENT_NAME = "太墟 (TaiXu)"
     }
 }
