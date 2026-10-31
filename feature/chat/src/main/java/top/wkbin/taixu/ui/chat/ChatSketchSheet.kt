@@ -41,7 +41,7 @@ import top.wkbin.taixu.ui.components.RuntimeTextButton
 private data class SketchStroke(val points: List<Offset>)
 
 /**
- * 草图绘制弹窗（参考 rikkahub Sketch）：手指绘制 → 导出 PNG → 以图片附件进输入框。
+ * 草图绘制弹窗：手指绘制 → 导出 PNG → 以图片附件进输入框。
  * 白纸深墨，导出前按位图尺寸等比放大笔迹。
  */
 @Composable

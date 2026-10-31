@@ -1,7 +1,7 @@
 package top.wkbin.taixu.harness.model
 
 /**
- * 模型元数据（模态 / 能力 / 上下文长度）的集中注册表，移植自 rikkahub 的 ModelRegistry。
+ * 模型元数据（模态 / 能力 / 上下文长度）的集中注册表。
  *
  * 解析顺序：先查 models.dev 目录（[installCatalog] 安装，覆盖绝大多数模型），
  * 查不到的再走下面的 token 规则兜底，未知模型回退纯文本 / 无能力。

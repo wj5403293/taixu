@@ -189,7 +189,7 @@ internal fun ChatComposer(
         // 毛玻璃开启时容器透明，铺底与着色由效果负责
         containerColor = if (blurEnabled) Color.Transparent
             else top.wkbin.taixu.ui.theme.chatBackdropSurface(MaterialTheme.colorScheme.surfaceContainer),
-        // 全包裹描边：常态 outlineVariant，运行中主色，参考 rikkahub ChatInput
+        // 全包裹描边：常态 outlineVariant，运行中主色
         borderColor = if (running) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
     ) {

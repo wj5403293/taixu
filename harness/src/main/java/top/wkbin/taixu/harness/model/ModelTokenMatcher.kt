@@ -1,7 +1,7 @@
 package top.wkbin.taixu.harness.model
 
 /**
- * 按模型 id 的 token 序列匹配元数据（移植自 rikkahub 的 ModelDsl）。
+ * 按模型 id 的 token 序列匹配元数据。
  *
  * `gpt-5-mini` 切成 [gpt, -, 5, -, mini]，`tokens("gpt", "5")` 按序命中即匹配；
  * 匹配支持打分，同分时多个定义合并，具体规则见 [ModelMetadataRegistry]。
