@@ -44,6 +44,7 @@ internal object HarnessApiMapper {
             lower == "process" -> HarnessTool.PROCESS
             lower == "host" -> HarnessTool.HOST
             lower == "download" -> HarnessTool.DOWNLOAD
+            lower == "search_web" -> HarnessTool.SEARCH_WEB
             lower == "memory" -> HarnessTool.MEMORY
             lower == "plan" -> HarnessTool.PLAN
             lower == "scratchpad" -> HarnessTool.SCRATCHPAD
@@ -70,6 +71,7 @@ internal object HarnessApiMapper {
         HarnessTool.PROCESS -> "process"
         HarnessTool.HOST -> "host"
         HarnessTool.DOWNLOAD -> "download"
+        HarnessTool.SEARCH_WEB -> "search_web"
         HarnessTool.MEMORY -> "memory"
         HarnessTool.PLAN -> "plan"
         HarnessTool.SCRATCHPAD -> "scratchpad"

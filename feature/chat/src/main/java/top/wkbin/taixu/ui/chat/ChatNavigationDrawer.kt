@@ -99,6 +99,7 @@ fun ChatNavigationDrawer(
                     onDismiss = onDismiss,
                     onSettings = { onDismiss(); onNavigate(MainDestination.Settings) },
                     onSwitch = { id -> viewModel.switchSession(id); onNavigate(MainDestination.Agent); onDismiss() },
+                    searchMessages = viewModel::searchMessages,
                     onNew = { onDismiss(); onNewSession() },
                     onCreateInWorkspace = { project ->
                         viewModel.createSession("", project.linuxPath, project.projectType.name)

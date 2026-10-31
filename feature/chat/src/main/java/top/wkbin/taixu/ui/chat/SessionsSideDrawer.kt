@@ -62,6 +62,7 @@ internal fun SessionsSideDrawer(
     onDelete: (String) -> Unit,
     onRename: (String, String) -> Unit,
     onCollapse: (() -> Unit)? = null, navigationContent: @Composable () -> Unit = {},
+    searchMessages: suspend (String) -> List<top.wkbin.taixu.core.database.MessageSearchHitRow> = { emptyList() },
     modifier: Modifier = Modifier,
 ) {
     if (!visible) return
@@ -184,6 +185,9 @@ internal fun SessionsSideDrawer(
                     )
                 }
 
+                if (query.isNotBlank()) {
+                    SessionMessageHits(query = query, search = searchMessages, onSwitch = { onSwitch(it); onDismiss() })
+                }
                 if (query.isBlank() || partition.recentSessions.isNotEmpty()) {
                     RecentSection(
                         recentSessions = partition.recentSessions,

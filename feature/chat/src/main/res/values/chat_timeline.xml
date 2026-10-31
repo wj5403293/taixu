@@ -26,6 +26,12 @@
     <string name="chat_action_process">管理后台进程</string>
     <string name="chat_action_host">操作设备</string>
     <string name="chat_action_download">下载文件</string>
+    <string name="chat_action_search_web">联网搜索</string>
+    <string name="chat_outline_title">大纲</string>
+    <string name="chat_outline_search_hint">搜索正文…</string>
+    <string name="chat_outline_empty">没有匹配的正文</string>
+    <string name="chat_drawer_message_hits">消息命中</string>
+    <string name="chat_drawer_untitled">未命名会话</string>
     <string name="chat_action_memory">管理记忆</string>
     <string name="chat_action_plan">更新任务计划</string>
     <string name="chat_action_scratchpad">更新任务草稿</string>

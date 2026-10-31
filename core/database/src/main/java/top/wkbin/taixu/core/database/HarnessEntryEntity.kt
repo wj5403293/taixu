@@ -39,6 +39,20 @@ data class HarnessEntryEntity(
  * 存在的意义：避免把整张 harness_entries（含巨大 payloadJson）读进内存造成 OOM。
  * 所有数值均在 SQLite 侧用 json_extract / LENGTH 算出，Kotlin 只接收几十行标量。
  */
+
+/**
+ * 跨会话消息全文搜索命中行（会话侧栏「消息命中」分组 / 历史检索共用）。
+ * excerpt 是 SQLite 侧以命中点为中心截出的窗口（instr 大小写敏感，未命中时回退前缀），
+ * 全文不进内存；payloadJson 被大载荷 blob 化的消息不参与搜索（与 LIKE 分支检索同口径）。
+ */
+data class MessageSearchHitRow(
+    val sessionId: String,
+    val sessionTitle: String?,
+    val messageId: String,
+    val isUser: Boolean,
+    val createdAt: Long,
+    val excerpt: String,
+)
 data class UsageAggregateRow(
     val sessionId: String,
     val customType: String?,

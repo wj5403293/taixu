@@ -175,7 +175,7 @@ fun ChatScreen(
     // 弹窗开关与编辑目标：用 rememberSaveable 保存，旋转 / 进程重建后不丢失
     var showModels by rememberSaveable { mutableStateOf(false) }; var showApprovalModes by rememberSaveable { mutableStateOf(false) }
     var showRunModes by rememberSaveable { mutableStateOf(false) }; var showSkillsMcpSheet by rememberSaveable { mutableStateOf(false) }
-    var showBranches by rememberSaveable { mutableStateOf(false) }; var showRuntimeTimeline by rememberSaveable { mutableStateOf(false) }
+    var showBranches by rememberSaveable { mutableStateOf(false) }; var showRuntimeTimeline by rememberSaveable { mutableStateOf(false) }; var showOutline by rememberSaveable { mutableStateOf(false) }
     var showMemorySheet by rememberSaveable { mutableStateOf(false) }
     val timelineFocus = rememberSaveable(currentSessionId) { mutableStateOf<String?>(null) }
     val timelineItems = remember(currentSessionId) { mutableStateOf(ChatTimelineSnapshot()) }
@@ -357,7 +357,7 @@ fun ChatScreen(
                 onOpenSessions = onOpenNavigation, onOpenBots = { onNavigate(MainDestination.Bots) }, onOpenWorkshop = { onNavigate(MainDestination.Workspace) },
                 onOpenRunModes = { showRunModes = true },
                 onOpenBranches = { showBranches = true },
-                onOpenRuntime = { showRuntimeTimeline = true }, onOpenMemory = { showMemorySheet = true },
+                    onOpenRuntime = { showRuntimeTimeline = true }, onOpenMemory = { showMemorySheet = true }, onOpenOutline = { showOutline = true },
                 onOpenBrowser = onOpenBrowser,
                 browserHighlight = browserHighlight,
                 onOpenRepository = onOpenRepository?.let { open ->
@@ -434,7 +434,7 @@ fun ChatScreen(
                     attachmentsProcessing = attachmentsProcessing,
                     onAttachmentsPicked = { arg0, arg1 -> viewModel?.onAttachmentsPicked(arg0, arg1) },
                     onRemoveAttachment = { arg0 -> viewModel?.removeAttachment(arg0) },
-                    onSend = { viewModel?.sendFromComposer() },
+                    onSend = { viewModel?.sendFromComposer() }, onSendWithoutAnswer = { viewModel?.sendFromComposer(answer = false) }, onPasteLongText = { viewModel?.addTextAttachment(it) },
                     onStop = { viewModel?.stop() },
                     lastAssistantMessageId = lastAssistantMessageId,
                     onRegenerate = { viewModel?.regenerateLast() },
@@ -567,6 +567,21 @@ fun ChatScreen(
     }
 
     ToolchainHost(showToolchainPanel, { showToolchainPanel = false }) { toolchainGap = it }
+    // 消息定位：运行时间线与大纲 sheet 共用——先设 timelineFocus，再等真实投影就绪后按渲染项下标滚动，避免手动折叠后索引错位。
+    val jumpToMessage = { messageId: String ->
+        coroutineScope.launch {
+            timelineFocus.value = messageId
+            val renderItems = kotlinx.coroutines.withTimeoutOrNull(1_000) {
+                androidx.compose.runtime.snapshotFlow { timelineItems.value }.first { it.focusedId == messageId && it.items.any { item -> item.containsMessage(messageId) } }.items
+            } ?: return@launch
+            val targetIndex = renderItems.indexOfFirst { it.containsMessage(messageId) }
+            if (targetIndex < 0) return@launch
+            // 头部仅包含初始化/空态与压缩横幅，任务计划不占单独条目。
+            val headerOffset = (if (initializing) 1 else 0) + (if (!initializing && messages.isEmpty()) 1 else 0) + (if (activeCompaction != null) 1 else 0)
+            listState.safeScrollToItem(targetIndex + headerOffset, animated = true)
+        }
+    }
+
     if (showRuntimeTimeline) {
         RuntimeTimelineSheet(
             events = runtimeEvents,
@@ -576,28 +591,13 @@ fun ChatScreen(
             onDeleteMemory = { arg0 -> viewModel?.deleteMemory(arg0) },
             onDeleteScratchpad = { arg0 -> viewModel?.deleteScratchpad(arg0) },
             onClearScratchpads = { viewModel?.clearScratchpads() },
-            onNavigateToMessage = { messageId ->
-                showRuntimeTimeline = false
-                coroutineScope.launch {
-                    // 等待同一列表的真实投影展开目标轮次，避免手动折叠改变索引后定位错位。
-                    timelineFocus.value = messageId
-                    val renderItems = kotlinx.coroutines.withTimeoutOrNull(1_000) {
-                        androidx.compose.runtime.snapshotFlow { timelineItems.value }.first { it.focusedId == messageId && it.items.any { item -> item.containsMessage(messageId) } }.items
-                    } ?: return@launch
-                    val targetIndex = renderItems.indexOfFirst { item ->
-                        item.containsMessage(messageId)
-                    }
-                    if (targetIndex < 0) return@launch
-                    // 头部仅包含初始化/空态与压缩横幅，任务计划不占单独条目。
-                    val headerOffset = (if (initializing) 1 else 0) +
-                        (if (!initializing && messages.isEmpty()) 1 else 0) +
-                        (if (activeCompaction != null) 1 else 0)
-                    listState.safeScrollToItem(targetIndex + headerOffset, animated = true)
-                }
-            },
+            onNavigateToMessage = { messageId -> showRuntimeTimeline = false; jumpToMessage(messageId) },
             onDismiss = { showRuntimeTimeline = false },
         )
     }
+
+    // 会话内大纲：用户/助手正文摘要列，点击定位回主列表（长会话导航）。
+    if (showOutline) ChatOutlineSheet(messages, onDismiss = { showOutline = false }, onJump = { showOutline = false; jumpToMessage(it) })
 
     if (showApprovalModes) {
         ApprovalModeSheet(currentApprovalMode = currentApprovalMode,
@@ -671,7 +671,7 @@ private fun ChatPaneContent(
     attachmentsProcessing: Boolean = false,
     onAttachmentsPicked: (List<Uri>, Boolean) -> Unit = { _, _ -> },
     onRemoveAttachment: (ChatAttachment) -> Unit = {},
-    onSend: () -> Unit,
+    onSend: () -> Unit, onSendWithoutAnswer: () -> Unit, onPasteLongText: (String) -> Unit,
     onStop: () -> Unit,
     lastAssistantMessageId: String?,
     onRegenerate: () -> Unit,
@@ -796,8 +796,7 @@ private fun ChatPaneContent(
             workspace = workspace,
             input = input,
             onInputChanged = onInputChanged,
-            onSend = onSend,
-            onStop = onStop,
+            onSend = onSend, onSendWithoutAnswer = onSendWithoutAnswer, onPasteLongText = onPasteLongText,            onStop = onStop,
             sendMode = sendMode,
             matchingCommands = matchingCommands,
             onApplyCommand = onApplyCommand,

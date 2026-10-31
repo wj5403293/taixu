@@ -37,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import top.wkbin.taixu.feature.chat.R
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.content.contentReceiver
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,7 +59,7 @@ import top.wkbin.taixu.harness.QueuedPrompt
  * 输入区：斜杠/@ 弹窗、排队指令、附件预览、推理强度滑块、工具状态胶囊与一体化输入胶囊。
  */
 @Composable
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 internal fun ChatComposer(
     listState: LazyListState,
     running: Boolean,
@@ -69,7 +70,7 @@ internal fun ChatComposer(
     workspace: String,
     input: String,
     onInputChanged: (String) -> Unit,
-    onSend: () -> Unit,
+    onSend: () -> Unit, onSendWithoutAnswer: () -> Unit, onPasteLongText: (String) -> Unit,
     onStop: () -> Unit,
     sendMode: ComposerSendMode,
     matchingCommands: List<SlashCommandItem>,
@@ -97,10 +98,9 @@ internal fun ChatComposer(
     onUpdateReasoning: (String?, String?) -> Unit = { _, _ -> },
     contextUsage: ContextUsage,
 ) {
-
     val focusRequester = remember { FocusRequester() }
-    val blurEnabled = rememberChatInputBlurEnabled()
-    val chatHazeState = LocalChatHazeState.current
+    val blurEnabled = rememberChatInputBlurEnabled(); val chatHazeState = LocalChatHazeState.current
+    val pasteLongTextReceiver = rememberPasteLongTextReceiver(onPasteLongText)
     var showAttachSheet by remember { mutableStateOf(false) }; var showSketchSheet by remember { mutableStateOf(false) }
     var textFieldValue by remember {
         mutableStateOf(TextFieldValue(input, TextRange(input.length)))
@@ -117,13 +117,12 @@ internal fun ChatComposer(
             }
         }
     }
-
     val coroutineScope = rememberCoroutineScope()
 
-    val doSend = {
+    val doSend = { dispatch: () -> Unit ->
         // 初始化（会话尚未恢复）期间发送目标未定，禁止误发
         if (!initializing && (input.isNotBlank() || attachments.isNotEmpty())) {
-            onSend()
+            dispatch()
             coroutineScope.launch {
                 delay(60)
                 listState.safeScrollToLastItem(animated = true)
@@ -269,7 +268,6 @@ internal fun ChatComposer(
                             }
                         }
                     }
-
                     item {
                         Surface(
                             shape = MaterialTheme.shapes.medium,
@@ -338,7 +336,8 @@ internal fun ChatComposer(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester),
+                        .focusRequester(focusRequester)
+                        .contentReceiver(pasteLongTextReceiver),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
                 )
 
@@ -369,7 +368,7 @@ internal fun ChatComposer(
                                 ComposerSendMode.NEXT_RUN -> MaterialTheme.colorScheme.secondary to MaterialTheme.colorScheme.onSecondary
                             }
                             ComposerSendButton(
-                                onClick = doSend,
+                                onClick = { doSend(onSend) },
                                 enabled = true,
                                 containerColor = sendContainer,
                                 contentColor = sendContent,
@@ -385,10 +384,11 @@ internal fun ChatComposer(
                     ) {
                         ContextUsageRing(contextUsage)
                         ComposerSendButton(
-                            onClick = doSend,
+                            onClick = { doSend(onSend) },
                             enabled = canSend,
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
+                            onLongClick = { doSend(onSendWithoutAnswer) },
                         )
                     }
                 }

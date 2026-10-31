@@ -42,15 +42,9 @@ class ApprovalPolicyEngine(
         if (tool == HarnessTool.HOST) {
             val action = args["action"]?.jsonPrimitive?.content.orEmpty().trim().lowercase()
             val rule = TrustedToolRiskPolicy.host(action)
-            if (rule.readOnly) {
-                return ApprovalDecision(false)
-            }
-            if (mode == ApprovalMode.FULL_ACCESS) {
-                return ApprovalDecision(false)
-            }
-            if (mode == ApprovalMode.ASSISTED && rule.assistedAuto) {
-                return ApprovalDecision(false)
-            }
+            if (rule.readOnly) return ApprovalDecision(false)
+            if (mode == ApprovalMode.FULL_ACCESS) return ApprovalDecision(false)
+            if (mode == ApprovalMode.ASSISTED && rule.assistedAuto) return ApprovalDecision(false)
             return ApprovalDecision(
                 required = true,
                 riskLevel = rule.level,
@@ -76,8 +70,10 @@ class ApprovalPolicyEngine(
         if (tool == HarnessTool.MCP && mcpBrowserRisk(effectiveMcpToolName(tool, args, rawToolName)) == "low") {
             return ApprovalDecision(false)
         }
+        // search_web 与 READ 同属只读检索：不改变任何状态，任何模式下免审（查询词会发送给外部搜索引擎，
+        // 该事实已写入工具描述，由模型决定何时值得联网）。
         if (tool == HarnessTool.READ || tool == HarnessTool.MEMORY || tool == HarnessTool.PLAN ||
-            tool == HarnessTool.SCRATCHPAD || tool == HarnessTool.HISTORY_SEARCH || tool == HarnessTool.HISTORY_READ || tool == HarnessTool.LOAD_RULE || tool == HarnessTool.LOAD_SKILL || tool == HarnessTool.COMPRESS || tool == HarnessTool.ASK_USER || tool == HarnessTool.RENDER_SURFACE
+            tool == HarnessTool.SCRATCHPAD || tool == HarnessTool.HISTORY_SEARCH || tool == HarnessTool.HISTORY_READ || tool == HarnessTool.LOAD_RULE || tool == HarnessTool.LOAD_SKILL || tool == HarnessTool.COMPRESS || tool == HarnessTool.ASK_USER || tool == HarnessTool.RENDER_SURFACE || tool == HarnessTool.SEARCH_WEB
         ) {
             return ApprovalDecision(false)
         }
@@ -129,7 +125,7 @@ class ApprovalPolicyEngine(
             )
             HarnessTool.READ, HarnessTool.MEMORY, HarnessTool.PLAN, HarnessTool.SCRATCHPAD,
             HarnessTool.HISTORY_SEARCH, HarnessTool.HISTORY_READ, HarnessTool.SUBAGENT, HarnessTool.LOAD_RULE,
-            HarnessTool.LOAD_SKILL, HarnessTool.RENDER_SURFACE,
+            HarnessTool.LOAD_SKILL, HarnessTool.RENDER_SURFACE, HarnessTool.SEARCH_WEB,
             HarnessTool.ASK_USER -> ApprovalDecision(false)
         }
     }
@@ -151,7 +147,7 @@ class ApprovalPolicyEngine(
         // 只读检索与元操作：全放
         HarnessTool.READ, HarnessTool.MEMORY, HarnessTool.PLAN, HarnessTool.SCRATCHPAD,
         HarnessTool.HISTORY_SEARCH, HarnessTool.HISTORY_READ, HarnessTool.LOAD_RULE,
-        HarnessTool.LOAD_SKILL, HarnessTool.COMPRESS, HarnessTool.ASK_USER -> null
+        HarnessTool.LOAD_SKILL, HarnessTool.COMPRESS, HarnessTool.ASK_USER, HarnessTool.SEARCH_WEB -> null
         HarnessTool.BASE -> if (isReadOnlyCommand(args["command"]?.jsonPrimitive?.content.orEmpty())) {
             null
         } else {
@@ -274,6 +270,7 @@ class ApprovalPolicyEngine(
         HarnessTool.BASE -> args["command"]?.jsonPrimitive?.content.orEmpty().lineSequence().firstOrNull().orEmpty()
         HarnessTool.PROCESS -> "process ${processAction(args)} ${args["id"]?.jsonPrimitive?.content.orEmpty()}".trim()
         HarnessTool.DOWNLOAD -> "download ${args["destination"]?.jsonPrimitive?.content.orEmpty()}"
+        HarnessTool.SEARCH_WEB -> "search_web ${args["query"]?.jsonPrimitive?.content.orEmpty()}"
         HarnessTool.HOST -> "host ${args["action"]?.jsonPrimitive?.content.orEmpty()} ${args["command"]?.jsonPrimitive?.content.orEmpty().lineSequence().firstOrNull().orEmpty()}".trim()
         HarnessTool.MCP -> {
             if (rawToolName == "use_capability") {

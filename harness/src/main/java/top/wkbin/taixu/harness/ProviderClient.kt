@@ -979,6 +979,15 @@ class ProviderClient internal constructor(
             ),
             ApiToolDefinition(
                 function = ApiFunctionDefinition(
+                    name = "search_web",
+                    description = "联网搜索：把查询词发送到外部搜索引擎，返回带序号的结果列表（标题/链接/摘要）。用于获取训练知识之外的时效信息、官方文档与事实核对；只读工具，不修改工作区。查询词使用与主题一致的语言；引用结果时用 [n](url) 标注来源；摘要不足以回答时用 download 抓取链接全文后再读。",
+                    parameters = Json.parseToJsonElement(
+                        """{"type":"object","properties":{"query":{"type":"string","description":"搜索关键词；越具体越好，可附时间限定"},"count":{"type":"integer","minimum":1,"maximum":20,"description":"返回条数，默认 8"}},"required":["query"]}""",
+                    ).jsonObject,
+                ),
+            ),
+            ApiToolDefinition(
+                function = ApiFunctionDefinition(
                     name = "memory",
                     description = "长期语义与事实记忆管理：持久化记录用户的长期偏好、项目架构规范、稳定事实。支持 action: save, query, list, delete。scope: global, project, session。kind: preference, rule, fact, project_info。",
                     parameters = Json.parseToJsonElement(

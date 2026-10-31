@@ -25,7 +25,8 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import top.wkbin.taixu.core.database.AgentSkillDao
 import top.wkbin.taixu.core.database.AgentSkillEntity
-import top.wkbin.taixu.core.database.AgentSkillRepository
+import top.wkbin.taixu.core.database.AgentSkillRepository
+import top.wkbin.taixu.harness.SearchWebToolBackend
 
 class ToolExecutorTest {
 
@@ -61,6 +62,7 @@ class ToolExecutorTest {
             askUserToolBackend = AskUserToolBackend(approvalPolicyEngine),
             promptAssetToolBackend = PromptAssetToolBackend(),
             harnessServiceToolBackend = HarnessServiceToolBackend(),
+            searchWebToolBackend = SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             capabilityToolGateway = CapabilityToolGateway(null) { _, _, _, _ -> error("unexpected host dispatch") },
         )
     }
@@ -337,6 +339,7 @@ class ToolExecutorTest {
             askUserToolBackend = AskUserToolBackend(ApprovalPolicyEngine(HarnessPathResolver())),
             promptAssetToolBackend = PromptAssetToolBackend(skillRepository = AgentSkillRepository(dao)),
             harnessServiceToolBackend = HarnessServiceToolBackend(),
+            searchWebToolBackend = SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             capabilityToolGateway = CapabilityToolGateway(null) { _, _, _, _ -> error("unexpected host dispatch") },
         )
     }
@@ -361,4 +364,10 @@ class ToolExecutorTest {
             emit(DownloadEvent.Completed(request.destination))
         }
     }
+}
+
+/** app 测试源集内私有桩：占位搜索 Provider（app 测试看不到 harness 测试源集的 StubSearchProvider）。 */
+private class StubSearchProvider : top.wkbin.taixu.harness.websearch.WebSearchProvider {
+    override val id = "stub"
+    override suspend fun search(query: String, count: Int) = emptyList<top.wkbin.taixu.harness.websearch.SearchHit>()
 }

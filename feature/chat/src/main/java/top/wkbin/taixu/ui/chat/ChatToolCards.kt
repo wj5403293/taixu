@@ -406,6 +406,7 @@ internal fun toolIcon(tool: HarnessTool): RuntimeIconName = when (tool) {
     HarnessTool.PROCESS -> RuntimeIconName.Play
     HarnessTool.HOST -> RuntimeIconName.Phone
     HarnessTool.DOWNLOAD -> RuntimeIconName.Download
+    HarnessTool.SEARCH_WEB -> RuntimeIconName.Globe
     HarnessTool.MEMORY -> RuntimeIconName.Bookmark
     HarnessTool.PLAN -> RuntimeIconName.Checklist
     HarnessTool.SCRATCHPAD -> RuntimeIconName.StickyNote
@@ -469,7 +470,6 @@ internal fun DiffStatBadge(
 }
 
 private val DIFF_STAT_REGEX = Regex("""DIFF_STAT:\s*\+(\d+)\s*-(\d+)""")
-
 /** 从工具输出或参数中解析代码变更统计（增加行数, 删除行数）。 */
 internal fun parseDiffStat(call: ToolCall, result: ToolResult?): Pair<Int, Int>? {
     // 若工具执行已完成且失败，不展示代码变更统计

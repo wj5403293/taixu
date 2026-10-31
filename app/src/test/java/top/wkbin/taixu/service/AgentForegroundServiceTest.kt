@@ -143,6 +143,7 @@ class AgentForegroundServiceTest {
         override fun send(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun steer(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun appendOnly(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun cancel(targetSessionId: String?) { cancelled += targetSessionId }
         override fun resolveApproval(requestId: String, approved: Boolean, rememberForSession: Boolean) = Unit
         override fun resolveQuestion(requestId: String, answersJson: String) = Unit

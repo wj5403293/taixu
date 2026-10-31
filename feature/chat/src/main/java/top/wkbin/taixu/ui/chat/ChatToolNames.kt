@@ -43,6 +43,7 @@ internal fun toolName(tool: HarnessTool, rawToolName: String? = null): String =
         HarnessTool.PROCESS -> "process"
         HarnessTool.HOST -> "host"
         HarnessTool.DOWNLOAD -> "download"
+        HarnessTool.SEARCH_WEB -> "search_web"
         HarnessTool.MEMORY -> "memory"
         HarnessTool.PLAN -> "plan"
         HarnessTool.SCRATCHPAD -> "scratchpad"

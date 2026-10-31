@@ -32,6 +32,8 @@ interface SessionControl {
     fun send(text: String, targetSessionId: String? = null, imageUrls: List<String> = emptyList())
     fun steer(text: String, targetSessionId: String? = null, imageUrls: List<String> = emptyList())
     fun followUp(text: String, targetSessionId: String? = null, imageUrls: List<String> = emptyList())
+    /** 只发不答：仅把一条用户消息落库上屏，不触发推理也不入队；忙会话或会话不存在时静默忽略。 */
+    fun appendOnly(text: String, targetSessionId: String? = null, imageUrls: List<String> = emptyList())
     /** Requests cancellation; state streams report settlement asynchronously. */
     fun cancel(targetSessionId: String? = null)
     fun resolveApproval(requestId: String, approved: Boolean, rememberForSession: Boolean = false)

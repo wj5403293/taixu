@@ -79,6 +79,9 @@ interface HarnessRuntimeRepository {
     ): HarnessEntryEntity? = branch(sessionId, leafId).lastOrNull { it.entryType == entryType }
     suspend fun searchBranch(sessionId: String, leafId: String?, query: String, limit: Int): List<HarnessEntryEntity> =
         branch(sessionId, leafId).asReversed().filter { it.entryType == "message" && it.payloadJson.contains(query, ignoreCase = true) }.take(limit)
+    /** 跨会话消息正文全文搜索（LIKE 通配符转义由实现负责）。 */
+    suspend fun searchMessages(query: String, limit: Int = 30): List<MessageSearchHitRow> =
+        error("Message search is not supported by this repository")
     suspend fun branchEntryAt(sessionId: String, leafId: String?, index: Int): HarnessEntryEntity? =
         branch(sessionId, leafId).filter { it.entryType == "message" }.getOrNull(index)
     suspend fun findEntry(sessionId: String, entryId: String): HarnessEntryEntity? =
@@ -231,6 +234,11 @@ class RoomHarnessRuntimeRepository(
             val escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             dao.searchBranch(sessionId, it, escaped, limit).map(::restoreFromStorage)
         }.orEmpty()
+    override suspend fun searchMessages(query: String, limit: Int): List<MessageSearchHitRow> {
+        val term = query.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return dao.searchMessagesAcrossSessions(escaped, limit)
+    }
     override suspend fun branchEntryAt(sessionId: String, leafId: String?, index: Int): HarnessEntryEntity? =
         leafId?.let { dao.branchEntryAt(sessionId, it, index)?.let(::restoreFromStorage) }
     private suspend fun ensureUniqueStorageEntry(entry: HarnessEntryEntity): HarnessEntryEntity {

@@ -36,6 +36,7 @@ internal fun ChatTopBar(
     onOpenReasoning: (() -> Unit)? = null, companion: ChatCompanionToggle? = null,
     speech: ChatSpeechToggle? = null,
     onOpenMemory: () -> Unit = {},
+    onOpenOutline: () -> Unit = {},
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val openFloatingChat = rememberFloatingChatLauncher()
@@ -97,6 +98,11 @@ internal fun ChatTopBar(
                     RuntimeIcon(RuntimeIconName.Brain, Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.chat_memory_sheet_title))
+                }
+                RuntimeTextButton(onClick = closeThen(onOpenOutline)) {
+                    RuntimeIcon(RuntimeIconName.List, Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.chat_outline_title))
                 }
                 ChatWorkbenchControls(runMode, currentBranch, runtimeEvents, running,
                     closeThen(onOpenRunModes), closeThen(onOpenBranches),

@@ -194,7 +194,7 @@ class ComposerMaterialRenderTest : ModelFlowRenderSupport() {
             Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Bottom) {
                 ChatComposer(listState = rememberLazyListState(), running = false, initializing = false,
                     status = null, messages = emptyList(), toolResults = emptyMap(), workspace = "",
-                    input = draft.value, onInputChanged = { draft.value = it }, onSend = { sent = true }, onStop = {},
+                    input = draft.value, onInputChanged = { draft.value = it }, onSend = { sent = true }, onSendWithoutAnswer = {}, onPasteLongText = {}, onStop = {},
                     sendMode = ComposerSendMode.NEXT_RUN, matchingCommands = emptyList(), onApplyCommand = {},
                     matchingMentions = emptyList(), onApplyMention = {}, attachments = emptyList(),
                     attachmentsProcessing = false, onAttachmentsPicked = { _, _ -> }, onRemoveAttachment = {},

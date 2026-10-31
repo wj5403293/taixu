@@ -14,7 +14,8 @@ import top.wkbin.taixu.harness.*
 import top.wkbin.taixu.harness.directory.CapabilityToolGateway
 import top.wkbin.taixu.runtime.LinuxRuntime
 import top.wkbin.taixu.runtime.environment.*
-import top.wkbin.taixu.runtime.shell.*
+import top.wkbin.taixu.runtime.shell.*
+import top.wkbin.taixu.harness.websearch.StubSearchProvider
 
 class HarnessCommandOutputTest {
     @get:Rule val temporary = TemporaryFolder()
@@ -203,6 +204,7 @@ class HarnessCommandOutputTest {
             HostCapabilityToolBackend(secretRedactor = SecretRedactor()),
             LinuxCommandToolBackend(unused<LinuxRuntime>(), paths, environments = registry),
             DownloadToolBackend(unused<FileDownloader>(), hostFiles, WorkspaceMutationSnapshots(), registry),
+            SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             ContextMemoryToolBackend(), AskUserToolBackend(policy, null), PromptAssetToolBackend(), HarnessServiceToolBackend(),
             CapabilityToolGateway(null) { _, _, _, _ -> error("host") }, environments = registry)
         return Fixture(executor, world, registry, host, commands)

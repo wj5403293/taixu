@@ -118,7 +118,8 @@ class GroupGovernanceRuntimeTest {
         override fun cancel(targetSessionId: String?) { targetSessionId?.let { setState(it, SessionRunState.IDLE) } }
         override fun send(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun steer(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
-        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun appendOnly(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun resolveApproval(requestId: String, approved: Boolean, rememberForSession: Boolean) = Unit
         override fun resolveQuestion(requestId: String, answersJson: String) = Unit
     }

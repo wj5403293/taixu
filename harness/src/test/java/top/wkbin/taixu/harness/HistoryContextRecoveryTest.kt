@@ -23,7 +23,8 @@ import top.wkbin.taixu.harness.compaction.CompactionManager
 import top.wkbin.taixu.harness.core.*
 import top.wkbin.taixu.harness.session.SessionTreeStore
 import top.wkbin.taixu.harness.directory.CapabilityToolGateway
-import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.harness.websearch.StubSearchProvider
 
 /** Fake model drives the real turn runner and history backend after recreating the session adapters. */
 @RunWith(RobolectricTestRunner::class)
@@ -135,6 +136,7 @@ class HistoryContextRecoveryTest {
             HostCapabilityToolBackend(secretRedactor = SecretRedactor()),
             LinuxCommandToolBackend(unused<LinuxRuntime>(), paths),
             DownloadToolBackend(unused<FileDownloader>(), files, WorkspaceMutationSnapshots()),
+            SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             backend, AskUserToolBackend(policy, null), PromptAssetToolBackend(), HarnessServiceToolBackend(),
             CapabilityToolGateway(null) { _, _, _, _ -> error("Unexpected capability") })
     }

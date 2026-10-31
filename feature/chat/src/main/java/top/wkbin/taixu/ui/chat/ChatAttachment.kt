@@ -196,6 +196,16 @@ object AttachmentHelper {
             .onFailure { Log.w(TAG, "删除附件 host 文件失败 path=$path", it) }
     }
 
+    /**
+     * 粘贴超长文本 → txt 附件：与图片附件同目录
+     * （linux-runtime/attachments，PRoot 挂 /attachments），guest 路径由调用方拼装。
+     * 写入失败返回 null（调用方放行原文插入输入框）。
+     */
+    fun writePastedText(context: Context, text: String): File? = runCatching {
+        val attachmentsDir = File(context.filesDir, "linux-runtime/attachments").apply { mkdirs() }
+        File(attachmentsDir, "${System.currentTimeMillis()}_paste.txt").apply { writeText(text) }
+    }.onFailure { Log.w(TAG, "粘贴文本落盘失败", it) }.getOrNull()
+
     /** 纯聚合：按 TooLarge/Failed 计数拼装提示；无异常时返回 null（保持单测不依赖 Context） */
     internal fun buildAttachmentNotice(
         tooLargeCount: Int,

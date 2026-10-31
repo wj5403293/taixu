@@ -15,6 +15,7 @@ import top.wkbin.taixu.core.network.FileDownloader
 import top.wkbin.taixu.runtime.LinuxRuntime
 import top.wkbin.taixu.runtime.environment.*
 import top.wkbin.taixu.harness.checkpoint.*
+import top.wkbin.taixu.harness.websearch.StubSearchProvider
 
 class RemoteToolPipelineTest {
     @Test fun `remote rewind and undo restore only the bound world's files`() = runBlocking {
@@ -104,7 +105,7 @@ class RemoteToolPipelineTest {
         val executor = ToolExecutor(local, paths, policy, SecretRedactor(),
             HostCapabilityToolBackend(secretRedactor = SecretRedactor()),
             LinuxCommandToolBackend(unused<LinuxRuntime>(), paths, environments = registry), download,
-            ContextMemoryToolBackend(), AskUserToolBackend(policy, null), PromptAssetToolBackend(),
+            SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))), ContextMemoryToolBackend(), AskUserToolBackend(policy, null), PromptAssetToolBackend(),
             HarnessServiceToolBackend(), CapabilityToolGateway(null) { _, _, _, _ -> error("host") },
             workspaceToolBackend = WorkspaceToolBackend({ error("local files") }, environments = registry),
             environments = registry)
