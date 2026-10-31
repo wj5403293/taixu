@@ -36,11 +36,19 @@ class SessionTitleGenerator(
     private val attempted = ConcurrentHashMap.newKeySet<String>()
 
     /** 回合结束时调用；[conversation] 为该会话的当前消息投影。 */
-    suspend fun maybeGenerate(sessionId: String, conversation: List<HarnessMessage>) {
+    suspend fun maybeGenerate(
+        sessionId: String,
+        conversation: List<HarnessMessage>,
+        /** 自定义标题提示词；空白用内置默认（偏好注入） */
+        promptOverride: String? = null,
+        /** 指定标题模型档案 id；空白用会话绑定模型 */
+        modelIdOverride: String? = null,
+    ) {
         val session = sessions.findById(sessionId) ?: return
         if (!DefaultSessionTitle.isPlaceholder(session.title)) return
+        val effectiveModelId = modelIdOverride?.trim()?.takeIf { it.isNotBlank() } ?: session.modelId
         // 未绑定模型档案的会话无法定价生成，直接跳过（不占用尝试额度）。
-        if (session.modelId.isNullOrBlank()) return
+        if (effectiveModelId.isNullOrBlank()) return
         // 占位符确认后才占用「每会话一次」的尝试额度：老会话（标题已改名）永远不烧调用。
         if (!attempted.add(sessionId)) return
         try {
@@ -49,16 +57,20 @@ class SessionTitleGenerator(
             val assistantText = conversation.filterIsInstance<AssistantText>().lastOrNull()
                 ?.textContent?.toString()?.lineSequence()?.firstOrNull { it.isNotBlank() }?.take(SNIPPET_CHARS) ?: return
             val prompt = buildString {
-                appendLine("根据下面这轮对话生成一个不超过 16 个字的简短标题，概括用户的核心意图或主题。")
-                appendLine("只输出标题文本本身：不要引号、书名号、句号，不要任何前缀或解释。")
+                if (promptOverride.isNullOrBlank()) {
+                    appendLine("根据下面这轮对话生成一个不超过 16 个字的简短标题，概括用户的核心意图或主题。")
+                    appendLine("只输出标题文本本身：不要引号、书名号、句号，不要任何前缀或解释。")
+                } else {
+                    appendLine(promptOverride.trim())
+                }
                 appendLine()
                 appendLine("用户：$userText")
                 appendLine()
                 appendLine("助手：$assistantText")
             }
             val body = modelPort.complete(
-                session.modelId,
-                session.modelVariant,
+                effectiveModelId,
+                session.modelVariant.takeIf { modelIdOverride.isNullOrBlank() },
                 listOf(
                     ApiMessage(role = "system", content = "你是标题生成器，只输出标题文本。"),
                     ApiMessage(role = "user", content = prompt),

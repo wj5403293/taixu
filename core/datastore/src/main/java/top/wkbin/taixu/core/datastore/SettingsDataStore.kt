@@ -273,9 +273,7 @@ class SettingsDataStore(
     )
 
 
-    val customSystemPromptEnabled: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
-        preferences[customSystemPromptEnabledKey] ?: false
-    }
+    val customSystemPromptEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[customSystemPromptEnabledKey] ?: false }
 
     suspend fun setCustomSystemPromptEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
@@ -283,9 +281,7 @@ class SettingsDataStore(
         }
     }
 
-    val customSystemPrompt: Flow<String> = context.settingsDataStore.data.map { preferences ->
-        preferences[customSystemPromptKey].orEmpty()
-    }
+    val customSystemPrompt: Flow<String> = context.settingsDataStore.data.map { it[customSystemPromptKey].orEmpty() }
 
     suspend fun setCustomSystemPrompt(prompt: String) {
         context.settingsDataStore.edit { preferences ->
@@ -294,9 +290,7 @@ class SettingsDataStore(
     }
 
     /** 模型自称（{{char}} 宏与默认提示词人设名），空串回退默认。 */
-    val agentCharName: Flow<String> = context.settingsDataStore.data.map { preferences ->
-        preferences[agentCharNameKey].orEmpty().ifBlank { DEFAULT_AGENT_CHAR_NAME }
-    }
+    val agentCharName: Flow<String> = context.settingsDataStore.data.map { it[agentCharNameKey].orEmpty().ifBlank { DEFAULT_AGENT_CHAR_NAME } }
 
     suspend fun setAgentCharName(name: String) {
         context.settingsDataStore.edit { preferences ->
@@ -305,9 +299,7 @@ class SettingsDataStore(
     }
 
     /** 模型对用户的称呼（{{user}}/{{nickname}} 宏），空串回退默认。 */
-    val agentUserName: Flow<String> = context.settingsDataStore.data.map { preferences ->
-        preferences[agentUserNameKey].orEmpty().ifBlank { DEFAULT_AGENT_USER_NAME }
-    }
+    val agentUserName: Flow<String> = context.settingsDataStore.data.map { it[agentUserNameKey].orEmpty().ifBlank { DEFAULT_AGENT_USER_NAME } }
 
     suspend fun setAgentUserName(name: String) {
         context.settingsDataStore.edit { preferences ->
@@ -367,9 +359,7 @@ class SettingsDataStore(
         }
     }
 
-    val themeMode: Flow<String> = context.settingsDataStore.data.map { preferences ->
-        preferences[themeModeKey] ?: "system"
-    }
+    val themeMode: Flow<String> = context.settingsDataStore.data.map { it[themeModeKey] ?: "system" }
 
     suspend fun setThemeMode(mode: String) {
         context.settingsDataStore.edit { preferences ->
@@ -378,9 +368,7 @@ class SettingsDataStore(
     }
 
     /** 动态取色（Monet 引擎，跟随系统壁纸色调），默认开启（在 Android 12+ 下生效）。 */
-    val dynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
-        preferences[dynamicColorEnabledKey] ?: true
-    }
+    val dynamicColorEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[dynamicColorEnabledKey] ?: true }
 
     suspend fun setDynamicColorEnabled(enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
@@ -436,9 +424,7 @@ class SettingsDataStore(
 
     private val autoCheckUpdatesKey = booleanPreferencesKey("auto_check_updates")
 
-    val autoCheckUpdates: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
-        preferences[autoCheckUpdatesKey] ?: true
-    }
+    val autoCheckUpdates: Flow<Boolean> = context.settingsDataStore.data.map { it[autoCheckUpdatesKey] ?: true }
 
     suspend fun setAutoCheckUpdates(enabled: Boolean) {
         context.settingsDataStore.edit { preferences ->
@@ -661,6 +647,19 @@ class SettingsDataStore(
         context.settingsDataStore.edit { it[roundLimitAutoContinuationsKey] = value.coerceIn(0, MAX_ROUND_LIMIT_AUTO_CONTINUATIONS) }
     }
 
+
+    private val autoTitleEnabledKey = booleanPreferencesKey("agent_auto_title_enabled"); private val autoTitlePromptKey = stringPreferencesKey("agent_auto_title_prompt")
+    private val autoTitleModelIdKey = stringPreferencesKey("agent_auto_title_model_id")
+
+    /** 回合结束后自动为占位符标题生成语义标题（默认开启；设置 UI 待设置区开放后接入） */
+    val autoTitleEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[autoTitleEnabledKey] ?: true }
+    suspend fun setAutoTitleEnabled(value: Boolean) { context.settingsDataStore.edit { it[autoTitleEnabledKey] = value } }
+    /** 自定义标题生成提示词；空白时用内置默认 */
+    val autoTitlePrompt: Flow<String> = context.settingsDataStore.data.map { it[autoTitlePromptKey] ?: "" }
+    suspend fun setAutoTitlePrompt(value: String) { context.settingsDataStore.edit { it[autoTitlePromptKey] = value } }
+    /** 指定标题生成的模型档案 id；空白时用会话绑定模型 */
+    val autoTitleModelId: Flow<String> = context.settingsDataStore.data.map { it[autoTitleModelIdKey] ?: "" }
+    suspend fun setAutoTitleModelId(value: String) { context.settingsDataStore.edit { it[autoTitleModelIdKey] = value } }
     /** 执行命令时是否自动注入工作区路径为 cwd */
     val autoWorkspaceCwd: Flow<Boolean> = context.settingsDataStore.data.map { it[autoWorkspaceCwdKey] ?: true }
     suspend fun setAutoWorkspaceCwd(value: Boolean) { context.settingsDataStore.edit { it[autoWorkspaceCwdKey] = value } }

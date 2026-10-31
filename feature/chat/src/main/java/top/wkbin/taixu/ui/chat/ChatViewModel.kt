@@ -906,9 +906,12 @@ class ChatViewModel(
             }
             _initializing.value = false
         }
-        viewModelScope.launch {
-            // 自动标题：回合结束且首回合有用户+助手正文时生成（生成器内部占位符判断+每会话一次去重）
-            harnessLoop.running.collect { isRunning -> if (!isRunning) titleGenerator.maybeGenerate(harnessLoop.currentSessionId.value, harnessLoop.messages.value) }
+        viewModelScope.launch { // 自动标题：开关/提示词/模型档案均可配（生成器内部去重）
+            harnessLoop.running.collect { isRunning ->
+                if (isRunning || !settingsDataStore.autoTitleEnabled.first()) return@collect
+                titleGenerator.maybeGenerate(harnessLoop.currentSessionId.value, harnessLoop.messages.value,
+                    promptOverride = settingsDataStore.autoTitlePrompt.first(), modelIdOverride = settingsDataStore.autoTitleModelId.first().ifBlank { null })
+            }
         }
     }
 

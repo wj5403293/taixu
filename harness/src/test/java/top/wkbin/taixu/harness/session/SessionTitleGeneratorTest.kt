@@ -119,4 +119,36 @@ class SessionTitleGeneratorTest {
         assertTrue(title.length <= SessionTitleGenerator.MAX_TITLE_CHARS)
         assertTrue(title.startsWith("这是一个"))
     }
+
+    @Test
+    fun `prompt and model overrides reach the port`() = runTest {
+        val sessions = RecordingSessions()
+        val calls = mutableListOf<List<ApiMessage>>()
+        val gen = SessionTitleGenerator(
+            sessions = sessions,
+            modelPort = SessionTitleModelPort { modelId, variant, messages ->
+                assertEquals("title-model", modelId)
+                assertEquals(null, variant)
+                calls += messages
+                "自定义提示词标题"
+            },
+            log = object : SessionTitleLog {
+                override fun info(message: String) = Unit
+                override fun error(message: String, failure: Throwable) = Unit
+            },
+        )
+        gen.maybeGenerate("s1", conversation(), promptOverride = "用一句话概括主题。", modelIdOverride = "title-model")
+        assertEquals(listOf("s1" to "自定义提示词标题"), sessions.renamed)
+        val userPrompt = calls[0][1].content.orEmpty()
+        assertTrue(userPrompt.contains("用一句话概括主题。"))
+        assertTrue(userPrompt.contains("根据下面这轮对话").not())
+    }
+
+    @Test
+    fun `defaults keep builtin prompt and session model`() = runTest {
+        val sessions = RecordingSessions()
+        val (gen, calls) = generator(sessions)
+        gen.maybeGenerate("s1", conversation())
+        assertTrue(calls[0][1].content.orEmpty().contains("根据下面这轮对话"))
+    }
 }
