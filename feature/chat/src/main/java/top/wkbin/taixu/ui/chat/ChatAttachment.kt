@@ -42,6 +42,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 import android.graphics.Bitmap
+import androidx.exifinterface.media.ExifInterface
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
@@ -146,7 +147,9 @@ object AttachmentHelper {
                     if (bitmap != null) {
                         val baos = ByteArrayOutputStream()
                         try {
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                            // BitmapFactory 不读 EXIF：带方向元数据的相机照片须先归一，否则模型看到横竖颠倒的图
+                            val oriented = applyExifOrientation(bitmap, targetFile.absolutePath)
+                            oriented.compress(Bitmap.CompressFormat.JPEG, 80, baos)
                         } finally {
                             bitmap.recycle()
                         }
@@ -243,6 +246,30 @@ object AttachmentHelper {
             bytes < 1024 * 1024 -> "${bytes / 1024} KB"
             else -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
         }
+    }
+
+    /**
+     * EXIF 方向归一：按文件的方向元数据旋转位图（BitmapFactory 忽略 EXIF）。
+     * 覆盖相机常见的旋转四态与镜像四态；无元数据或解析失败原样返回（不 recycle 入参）。
+     */
+    private fun applyExifOrientation(bitmap: Bitmap, path: String): Bitmap {
+        val orientation = runCatching {
+            ExifInterface(path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+        val matrix = android.graphics.Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+            ExifInterface.ORIENTATION_TRANSPOSE -> { matrix.postRotate(90f); matrix.postScale(-1f, 1f) }
+            ExifInterface.ORIENTATION_TRANSVERSE -> { matrix.postRotate(270f); matrix.postScale(-1f, 1f) }
+            else -> return bitmap
+        }
+        return runCatching {
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        }.getOrDefault(bitmap)
     }
 }
 
