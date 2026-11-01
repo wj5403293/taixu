@@ -40,6 +40,7 @@ internal fun ProjectSection(
     onCreateInProject: (ProjectSessionGroup) -> Unit,
     onRename: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onTogglePin: (String, Boolean) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         SessionSectionHeader(
@@ -150,6 +151,8 @@ internal fun ProjectSection(
                                         onSwitch = { onSwitch(session.id) },
                                         onRename = { onRename(session.id) },
                                         onDelete = { onDelete(session.id) },
+                                        pinned = session.pinnedAt != 0L,
+                                        onTogglePin = { onTogglePin(session.id, session.pinnedAt == 0L) },
                                     )
                                 }
                             }

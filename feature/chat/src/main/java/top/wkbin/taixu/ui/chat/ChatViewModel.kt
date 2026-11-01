@@ -1153,9 +1153,7 @@ class ChatViewModel(
         }
     }
 
-    fun switchSession(id: String) {
-        viewModelScope.launch { harnessLoop.loadSession(id) }
-    }
+    fun switchSession(id: String) = viewModelScope.launch { harnessLoop.loadSession(id) }
 
     /** 跨会话消息全文搜索（会话侧栏「消息命中」分组，防抖在 UI 层）；空词返回空。 */
     suspend fun searchMessages(term: String): List<MessageSearchHitRow> = runCatching {
@@ -1164,6 +1162,8 @@ class ChatViewModel(
 
     fun deleteSession(id: String) = sessionDeletionFeedback.delete(viewModelScope, harnessLoop, id, context.getString(R.string.chat_request_archive_delete_error))
 
+    /** 会话置顶（抽屉置顶分区；pinned=false 取消） */
+    fun setSessionPinned(id: String, pinned: Boolean) = viewModelScope.launch { sessionDao.setPinned(id, if (pinned) System.currentTimeMillis() else 0L) }
     fun renameSession(id: String, title: String) = viewModelScope.launch { harnessLoop.renameSession(id, title) }
 
     // ---- 撤回到此轮（Checkpoint Rewind） ----

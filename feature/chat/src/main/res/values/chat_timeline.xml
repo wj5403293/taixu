@@ -32,6 +32,9 @@
     <string name="chat_outline_empty">没有匹配的正文</string>
     <string name="chat_drawer_message_hits">消息命中</string>
     <string name="chat_drawer_untitled">未命名会话</string>
+    <string name="chat_drawer_pinned">置顶</string>
+    <string name="chat_pin_session">置顶</string>
+    <string name="chat_unpin_session">取消置顶</string>
     <string name="chat_action_memory">管理记忆</string>
     <string name="chat_action_plan">更新任务计划</string>
     <string name="chat_action_scratchpad">更新任务草稿</string>

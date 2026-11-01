@@ -34,6 +34,7 @@ internal fun SessionDrawerItem(
     session: HarnessSessionEntity, isCurrent: Boolean, runState: SessionRunState,
     onSwitch: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit,
     onHide: (() -> Unit)? = null,
+    pinned: Boolean = false, onTogglePin: (() -> Unit)? = null,
 ) {
     var showMenu by remember(session.id) { mutableStateOf(false) }
     val moreLabel = stringResource(R.string.chat_more_controls)
@@ -66,6 +67,9 @@ internal fun SessionDrawerItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (pinned) {
+                RuntimeIcon(RuntimeIconName.Bookmark, Modifier.size(14.dp), MaterialTheme.colorScheme.primary)
+            }
             Text(
                 text = session.title,
                 style = MaterialTheme.typography.bodyMedium,
@@ -95,6 +99,13 @@ internal fun SessionDrawerItem(
                         leadingIcon = { RuntimeIcon(RuntimeIconName.Edit, Modifier.size(18.dp)) },
                         onClick = { showMenu = false; onRename() },
                     )
+                    if (onTogglePin != null) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(if (pinned) R.string.chat_unpin_session else R.string.chat_pin_session)) },
+                            leadingIcon = { RuntimeIcon(RuntimeIconName.Bookmark, Modifier.size(18.dp)) },
+                            onClick = { showMenu = false; onTogglePin() },
+                        )
+                    }
                     if (onHide != null) {
                         DropdownMenuItem(
                             text = { Text(stringResource(R.string.chat_hide_session)) },

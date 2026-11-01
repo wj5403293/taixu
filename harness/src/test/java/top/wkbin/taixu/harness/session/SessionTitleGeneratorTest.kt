@@ -27,6 +27,7 @@ class SessionTitleGeneratorTest {
         override fun observeAll() = throw UnsupportedOperationException()
         override suspend fun upsert(session: HarnessSessionEntity) = throw UnsupportedOperationException()
         override suspend fun touch(id: String, updatedAt: Long) = throw UnsupportedOperationException()
+        override suspend fun setPinned(id: String, pinnedAt: Long) = Unit
         override suspend fun setApprovalMode(id: String, approvalMode: String, updatedAt: Long) = throw UnsupportedOperationException()
         override suspend fun setApprovalModeForAll(approvalMode: String, updatedAt: Long) = throw UnsupportedOperationException()
         override suspend fun setRunMode(id: String, runMode: String, updatedAt: Long) = throw UnsupportedOperationException()

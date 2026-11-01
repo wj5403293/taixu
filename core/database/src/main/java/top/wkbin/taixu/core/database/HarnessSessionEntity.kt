@@ -32,6 +32,9 @@ data class HarnessSessionEntity(
     @ColumnInfo(defaultValue = "build") val runMode: String = RunMode.BUILD.id,
     /** Pre-SSH history binds to the local distro on first use; portable imports require a new session. */
     @ColumnInfo(defaultValue = "'unbound'") val executionTargetJson: String? = null,
+    /** 置顶时间戳（0 = 未置顶）；会话抽屉置顶分区排序键 */
+    @ColumnInfo(defaultValue = "0") val pinnedAt: Long = 0,
+
 )
 
 @Dao
@@ -45,8 +48,12 @@ interface HarnessSessionDao {
         return findById(id)?.executionTargetJson
     }
 
-    @Query("SELECT * FROM harness_sessions ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM harness_sessions ORDER BY pinnedAt != 0 DESC, pinnedAt DESC, updatedAt DESC")
     fun observeAll(): Flow<List<HarnessSessionEntity>>
+
+    /** 置顶/取消置顶（pinnedAt=0 取消；updatedAt 不动，避免置顶动作扰动最近排序） */
+    @Query("UPDATE harness_sessions SET pinnedAt = :pinnedAt WHERE id = :id")
+    suspend fun setPinned(id: String, pinnedAt: Long)
 
     @Query("SELECT * FROM harness_sessions WHERE id = :id LIMIT 1")
     suspend fun findById(id: String): HarnessSessionEntity?

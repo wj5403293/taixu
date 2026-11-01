@@ -32,6 +32,9 @@
     <string name="chat_outline_empty">No matching messages</string>
     <string name="chat_drawer_message_hits">Message hits</string>
     <string name="chat_drawer_untitled">Untitled session</string>
+    <string name="chat_drawer_pinned">Pinned</string>
+    <string name="chat_pin_session">Pin to top</string>
+    <string name="chat_unpin_session">Unpin</string>
     <string name="chat_action_memory">Manage memory</string>
     <string name="chat_action_plan">Update task plan</string>
     <string name="chat_action_scratchpad">Update scratchpad</string>

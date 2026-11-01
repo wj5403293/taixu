@@ -135,6 +135,7 @@ private class MemorySessions : HarnessSessionRepository {
     override suspend fun listAll() = values.values.toList()
     override suspend fun deleteSession(id: String) { values.remove(id) }
     override suspend fun touch(id: String, updatedAt: Long) = Unit
+        override suspend fun setPinned(id: String, pinnedAt: Long) = Unit
     override suspend fun rename(id: String, title: String, updatedAt: Long) = Unit
     override suspend fun setApprovalMode(id: String, approvalMode: String, updatedAt: Long) = Unit
     override suspend fun setApprovalModeForAll(approvalMode: String, updatedAt: Long) = Unit
