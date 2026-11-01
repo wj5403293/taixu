@@ -207,3 +207,12 @@ P5 静态 Web 页面入口：[`PLUGIN_WEB_EXTENSIONS.md`](PLUGIN_WEB_EXTENSIONS.
 - `plugin/ui/src/main/java/top/wkbin/taixu/plugin/ui/web/WebPluginStreamBridge.kt`：同一请求 id 下的分块推送桥，单块与单流预算受限，关闭即停止生产者。
 - `plugin/ui/src/main/java/top/wkbin/taixu/plugin/ui/web/WebPluginServiceCapabilities.kt`：宿主登记的 `host.service-request` / `host.service-stream` 只读能力工厂。
 - `plugin/runtime/src/main/kotlin/top/wkbin/taixu/plugin/runtime/PluginCapabilityInput.kt`：能力入站校验与相对子路径白名单（含 `SERVICE_ACTIONS`）。
+- `harness/src/main/java/top/wkbin/taixu/harness/websearch/`：联网搜索 Provider 抽象 + Bing 免 Key 抓取（`WebSearchProviders` 为 Koin verify 友好的具名载体）；工具后端在 `harness/.../SearchWebToolBackend.kt`（`search_web`，审批免审组）。
+- `harness/src/main/java/top/wkbin/taixu/harness/mcp/oauth/McpOAuthDiscovery.kt`：MCP OAuth 2.1 自动发现（RFC 9728/8414）+ 动态客户端注册（RFC 7591）；协调器 `McpOAuthCoordinator.provision` 只补空白字段。
+- `harness/src/main/java/top/wkbin/taixu/harness/session/SessionTitleGenerator.kt`：LLLM 自动会话标题（占位符判定 + 每会话一次尝试；开关/提示词/模型档案偏好见 `AgentPreferences.autoTitle*`）。
+- `harness/src/main/java/top/wkbin/taixu/harness/session/SessionControl.kt` 的 `appendOnly`（实现见 `HarnessLoop`）：只发不答受理路径（互斥锁内仅落库用户消息；忙会话静默忽略）。
+- `feature/chat/src/main/java/top/wkbin/taixu/ui/chat/ChatOutlineSheet.kt`：会话内大纲（正文摘要列 + 即时过滤 + timelineFocus 定位）。
+- `feature/chat/src/main/java/top/wkbin/taixu/ui/chat/SessionMessageHits.kt`：会话侧栏「消息命中」分组（json_extract+LIKE 跨会话消息搜索，DAO 在 `HarnessBranchQueries.searchMessagesAcrossSessions`）。
+- `feature/chat/src/main/java/top/wkbin/taixu/ui/chat/ChatExportMarkdown.kt`：会话导出 Markdown（顶栏更多面板入口，FileProvider 分享）。
+- `feature/chat/src/main/java/top/wkbin/taixu/ui/chat/DocxTextExtractor.kt`：DOCX 附件正文抽取（挂载即生成同名 .txt sidecar 供 Agent read）。
+- `feature/chat/src/main/java/top/wkbin/taixu/ui/chat/PasteLongTextReceiver.kt`：粘贴超长文本自动转附件（contentReceiver 拦截 >2000 字）。
