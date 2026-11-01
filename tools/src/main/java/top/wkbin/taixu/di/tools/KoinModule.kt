@@ -6,6 +6,7 @@ import org.koin.dsl.module
 import org.koin.dsl.onClose
 import top.wkbin.taixu.core.tools.ProviderManager
 import top.wkbin.taixu.core.tools.AgentModelConnectionTester
+import top.wkbin.taixu.core.tools.AgentConnectionThreeWayProbe
 import top.wkbin.taixu.core.tools.AgentModelDiscovery
 import top.wkbin.taixu.core.tools.AgentProviderCatalog
 import top.wkbin.taixu.core.tools.AiProfileBackupCodec
@@ -64,6 +65,7 @@ val toolsModule = module {
     single<ProviderManager> { ProviderManager(providerRepository = get()) }
 
     single<AgentModelConnectionTester> { AgentModelConnectionTester(http = get(), external = getOrNull()) }
+    single { AgentConnectionThreeWayProbe(http = get()) }
 
     single<AgentModelDiscovery> { AgentModelDiscovery(http = get()) }
 

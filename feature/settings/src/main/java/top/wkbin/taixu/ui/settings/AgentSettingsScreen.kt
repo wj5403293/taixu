@@ -2,6 +2,7 @@ package top.wkbin.taixu.ui.settings
 import top.wkbin.taixu.ui.components.previewOrNull
 import top.wkbin.taixu.ui.components.previewStateOf
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.compose.koinInject
 import top.wkbin.taixu.ui.components.RuntimeAlertDialog
 import top.wkbin.taixu.ui.components.RuntimeCircularProgressIndicator as CircularProgressIndicator
 import androidx.compose.foundation.background
@@ -81,6 +82,9 @@ import top.wkbin.taixu.ui.components.SectionHeader
 import kotlinx.coroutines.delay
 import top.wkbin.taixu.core.model.skill.ClawHubMarketItem
 import top.wkbin.taixu.ui.settings.skill.SkillSecurityAuditDialog
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import top.wkbin.taixu.core.datastore.AgentPreferences
 
 enum class AgentSettingsCategory { EXECUTION, SUBAGENTS, SKILLS }
 
@@ -97,6 +101,12 @@ fun AgentSettingsScreen(
     val chatRoundCollapse by viewModel?.chatRoundCollapse?.collectAsStateWithLifecycle() ?: previewStateOf(false)
     val customSystemPromptEnabled by viewModel?.customSystemPromptEnabled?.collectAsStateWithLifecycle() ?: previewStateOf(false)
     val customSystemPrompt by viewModel?.customSystemPrompt?.collectAsStateWithLifecycle() ?: previewStateOf("")
+    // 自动标题偏好直连 AgentPreferences（不经 SettingsViewModel，避免顶格文件再增长）
+    val agentPrefs = koinInject<AgentPreferences>()
+    val autoTitleScope = rememberCoroutineScope()
+    val autoTitleEnabled by agentPrefs.autoTitleEnabled.collectAsStateWithLifecycle(initialValue = true)
+    val autoTitlePrompt by agentPrefs.autoTitlePrompt.collectAsStateWithLifecycle(initialValue = "")
+    val autoTitleModelId by agentPrefs.autoTitleModelId.collectAsStateWithLifecycle(initialValue = "")
     val agentCharName by viewModel?.agentCharName?.collectAsStateWithLifecycle() ?: previewStateOf("")
     val agentUserName by viewModel?.agentUserName?.collectAsStateWithLifecycle() ?: previewStateOf("")
     val compactionEnabled by viewModel?.contextCompactionEnabled?.collectAsStateWithLifecycle() ?: previewStateOf(false)
@@ -315,6 +325,24 @@ fun AgentSettingsScreen(
                 }
             }
 
+            // ---- 模块 1.5：自动会话标题 ----
+            item {
+                SectionHeader(
+                    title = "自动会话标题",
+                    subtitle = "回合结束后用模型为默认标题的会话生成语义标题",
+                )
+            }
+            item {
+                AutoTitleSettingsCard(
+                    enabled = autoTitleEnabled,
+                    onEnabledChange = { arg0 -> autoTitleScope.launch { agentPrefs.setAutoTitleEnabled(arg0) } },
+                    prompt = autoTitlePrompt,
+                    onPromptChange = { arg0 -> autoTitleScope.launch { agentPrefs.setAutoTitlePrompt(arg0) } },
+                    modelId = autoTitleModelId,
+                    onModelIdChange = { arg0 -> autoTitleScope.launch { agentPrefs.setAutoTitleModelId(arg0) } },
+                    models = models,
+                )
+            }
             // ---- 模块 2：系统提示词与人设自定义 ----
             item {
                 SectionHeader(

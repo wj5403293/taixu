@@ -15,6 +15,7 @@ import top.wkbin.taixu.core.model.EnvironmentVariable
 import top.wkbin.taixu.core.model.ExecutionMode
 import top.wkbin.taixu.core.model.RunningSendMode
 import top.wkbin.taixu.core.security.SecretManager
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -116,7 +117,6 @@ class SettingsDataStore(
     val workshopToolDir: Flow<String> = context.settingsDataStore.data.map { it[workshopToolDirKey].orEmpty() }
     val workshopAndroidScript: Flow<String> = context.settingsDataStore.data.map { it[workshopAndroidScriptKey].orEmpty() }
     val workshopFlutterScript: Flow<String> = context.settingsDataStore.data.map { it[workshopFlutterScriptKey].orEmpty() }
-
     suspend fun setWorkshopAndroidSdkPath(value: String) = setWorkshopValue(workshopAndroidSdkPathKey, value)
     suspend fun setWorkshopNdkPath(value: String) = setWorkshopValue(workshopNdkPathKey, value)
     suspend fun setWorkshopFlutterSdkPath(value: String) = setWorkshopValue(workshopFlutterSdkPathKey, value)

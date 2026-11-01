@@ -1274,6 +1274,15 @@ internal fun ModelEditorContent(
                     }
                 }
 
+                ModelConnectionThreeWayPanel(
+                    baseUrl = url,
+                    model = testModelTarget,
+                    apiKey = combinedKey,
+                    useResponsesApi = responseApiEnabled,
+                    protocol = provider.protocol,
+                    providerName = provider.name,
+                    enabled = true,
+                )
                 testResult?.let { resultMsg ->
                     val isSuccess = resultMsg == "连接成功"
                     Surface(
