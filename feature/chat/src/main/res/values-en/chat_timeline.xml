@@ -26,6 +26,20 @@
     <string name="chat_action_process">Manage background process</string>
     <string name="chat_action_host">Device action</string>
     <string name="chat_action_download">Download file</string>
+    <string name="chat_action_search_web">Web search</string>
+    <string name="chat_outline_title">Outline</string>
+    <string name="chat_outline_search_hint">Search messages…</string>
+    <string name="chat_outline_empty">No matching messages</string>
+    <string name="chat_drawer_message_hits">Message hits</string>
+    <string name="chat_drawer_untitled">Untitled session</string>
+    <string name="chat_drawer_pinned">Pinned</string>
+    <string name="chat_pin_session">Pin to top</string>
+    <string name="chat_attachment_extracted">
+Extracted text: %s (readable via the read tool)</string>
+    <string name="chat_unpin_session">Unpin</string>
+    <string name="chat_export_markdown">Export Markdown</string>
+    <string name="chat_export_chooser">Share conversation export</string>
+    <string name="chat_export_failed">Export failed, please retry</string>
     <string name="chat_action_memory">Manage memory</string>
     <string name="chat_action_plan">Update task plan</string>
     <string name="chat_action_scratchpad">Update scratchpad</string>

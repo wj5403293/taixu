@@ -22,6 +22,7 @@ dependencies {
     // A2UI PoC：render_surface 工具结果在聊天流内嵌渲染原生界面
     implementation(project(":feature:a2uipoc"))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.bundles.coil)
     implementation(libs.bundles.haze)

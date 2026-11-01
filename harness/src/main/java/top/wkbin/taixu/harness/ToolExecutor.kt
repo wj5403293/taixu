@@ -42,7 +42,7 @@ import kotlinx.serialization.json.JsonObject
  * - read / write / edit → [WorkspaceToolBackend]（工作区路径安全层）
  * - base / process → [LinuxCommandToolBackend]（PRoot 沙箱命令与后台进程）
  * - host → [HostCapabilityToolBackend]（宿主 Android 特权通道）
- * - download → [DownloadToolBackend]（HTTPS 下载）
+ * - download → [DownloadToolBackend]（HTTPS 下载）；search_web → [SearchWebToolBackend]（联网搜索）
  * - history_search / history_read / compress → [ContextMemoryToolBackend]（上下文记忆管理）
  * - ask_user → [AskUserToolBackend]（提问生命周期）
  * - load_skill / load_rule → [PromptAssetToolBackend]（按需提示资产加载）
@@ -59,6 +59,7 @@ class ToolExecutor(
     private val hostToolBackend: HostCapabilityToolBackend,
     private val linuxCommandToolBackend: LinuxCommandToolBackend,
     private val downloadToolBackend: DownloadToolBackend,
+    private val searchWebToolBackend: SearchWebToolBackend,
     private val contextMemoryToolBackend: ContextMemoryToolBackend,
     private val askUserToolBackend: AskUserToolBackend,
     private val promptAssetToolBackend: PromptAssetToolBackend,
@@ -96,6 +97,7 @@ class ToolExecutor(
         contextMemoryToolBackend = contextMemoryToolBackend,
         promptAssetToolBackend = promptAssetToolBackend,
         capabilityToolGateway = capabilityToolGateway,
+        searchWebToolBackend = searchWebToolBackend,
         searchRedactor = { session, workspace -> top.wkbin.taixu.harness.environment.executionOutputRedactor(
             secretRedactor, environments, linuxEnvironmentManager, settingsDataStore, session, workspace) },
     )
@@ -113,8 +115,7 @@ class ToolExecutor(
         toolCall: ToolCall,
         sessionId: String = "",
         workspace: String = "",
-        bypassApproval: Boolean = false,
-        allowApprovalRequest: Boolean = true,
+        bypassApproval: Boolean = false, allowApprovalRequest: Boolean = true,
         progressReporter: (suspend (String) -> Unit)? = null,
         operationId: String? = null,
         resourceOwner: String? = null,
@@ -137,8 +138,7 @@ class ToolExecutor(
         toolCall: ToolCall,
         sessionId: String = "",
         workspace: String = "",
-        bypassApproval: Boolean = false,
-        allowApprovalRequest: Boolean = true,
+        bypassApproval: Boolean = false, allowApprovalRequest: Boolean = true,
         progressReporter: (suspend (String) -> Unit)? = null,
         operationId: String? = null,
     ): ToolResult {

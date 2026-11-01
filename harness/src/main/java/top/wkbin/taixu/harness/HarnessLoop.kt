@@ -139,29 +139,17 @@ class HarnessLoop(
     override val messages: StateFlow<List<HarnessMessage>> get() = messageProjector.foregroundMessages
 
     /** Session-scoped message stream used by trusted secondary surfaces such as TaiXu WebChat. */
-    override fun messagesForSession(sessionId: String): StateFlow<List<HarnessMessage>> =
-        messageProjector.messagesFlow(sessionId)
+    override fun messagesForSession(sessionId: String): StateFlow<List<HarnessMessage>> = messageProjector.messagesFlow(sessionId)
 
     // ---- Checkpoints & Rewind（每轮文件快照安全网，供 UI / 未来 MCP 调用） ----
-    override fun sessionCheckpoints(sessionId: String): List<CheckpointMeta> =
-        rewindController.checkpoints(sessionId)
+    override fun sessionCheckpoints(sessionId: String): List<CheckpointMeta> = rewindController.checkpoints(sessionId)
 
-    override fun prepareRewind(
-        sessionId: String,
-        turn: Int,
-        scope: RewindScope,
-    ): RewindPlan = rewindController.prepare(sessionId, turn, scope)
+    override fun prepareRewind(sessionId: String, turn: Int, scope: RewindScope): RewindPlan = rewindController.prepare(sessionId, turn, scope)
 
-    override suspend fun commitRewind(
-        plan: RewindPlan,
-        workspace: String,
-    ): RewindResult = rewindController.commit(plan, workspace)
+    override suspend fun commitRewind(plan: RewindPlan, workspace: String): RewindResult = rewindController.commit(plan, workspace)
 
     /** 撤销最近一次 rewind（单层级）；null = 当前没有可撤销的 rewind。 */
-    override suspend fun undoRewind(
-        sessionId: String,
-        workspace: String,
-    ): RewindResult? = rewindController.undoLastRewind(sessionId, workspace)
+    override suspend fun undoRewind(sessionId: String, workspace: String): RewindResult? = rewindController.undoLastRewind(sessionId, workspace)
 
     /** Loads persisted history without changing the Android UI's foreground session. */
     override suspend fun prepareRemoteSession(sessionId: String): List<HarnessMessage> = messageProjector.preparedForLoad(sessionId).value
@@ -172,22 +160,16 @@ class HarnessLoop(
     private val _workspace = MutableStateFlow("")
     /** 当前会话关联的工作区 Linux 路径（"" = 未关联）。 */
     override val workspace: StateFlow<String> = _workspace.asStateFlow()
-
     private val _projectType = MutableStateFlow("")
     /** 当前会话显式选择的工程类型；空值表示由工作区内容自动识别。 */
     override val projectType: StateFlow<String> = _projectType.asStateFlow()
-
     override val mcpRecommendations get() = workspaceRecommendations.recommendations
 
-    override fun enableRecommendedMcp(presetId: String) {
-        loopScope.launch { workspaceRecommendations.enable(presetId) }
-    }
+    override fun enableRecommendedMcp(presetId: String) { loopScope.launch { workspaceRecommendations.enable(presetId) } }
 
     override fun dismissMcpRecommendation(presetId: String) = workspaceRecommendations.dismiss(presetId)
 
-    private fun refreshMcpRecommendations(workspacePath: String) {
-        workspaceRecommendations.refresh(loopScope, workspacePath)
-    }
+    private fun refreshMcpRecommendations(workspacePath: String) = workspaceRecommendations.refresh(loopScope, workspacePath)
 
     override val error: StateFlow<String?> get() = stateMirrors.error
 
@@ -603,6 +585,24 @@ class HarnessLoop(
         submitAsync(PromptQueue.STEER, text, targetSessionId, imageUrls)
     override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) =
         submitAsync(PromptQueue.FOLLOW_UP, text, targetSessionId, imageUrls)
+
+    /** 只发不答：互斥锁下仅落库并上屏一条用户消息，不建运行、不入任何 PromptQueue。忙会话静默忽略。 */
+    override fun appendOnly(text: String, targetSessionId: String?, imageUrls: List<String>) {
+        val sessId = targetSessionId?.ifBlank { null } ?: currentSessionId.value
+        val images = imageUrls.toList()
+        loopScope.launch {
+            try {
+                turnCoordinator.withSessionMutex(sessId) {
+                    val available = !isSessionBusy(sessId) && !tombstonedSessions.contains(sessId) && sessionDao.findById(sessId) != null
+                    if (available) {
+                        agentEventLogger.log(sessId, "UserPrompt", text.trim())
+                        messageProjector.append(sessId, UserMessage(id = newId(), createdAt = now(), text = text.trim(), imageUrls = images))
+                    }
+                }
+            } catch (cancellation: CancellationException) { throw cancellation }
+            catch (failure: Exception) { logger.e("Append-only admission failed for $sessId", failure) }
+        }
+    }
     private fun submitAsync(queue: PromptQueue, text: String, targetSessionId: String?, imageUrls: List<String>) {
         val sessId = targetSessionId?.ifBlank { null } ?: currentSessionId.value
         val images = imageUrls.toList()

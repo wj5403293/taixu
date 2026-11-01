@@ -13,6 +13,7 @@ import top.wkbin.taixu.harness.HostCapabilityToolBackend
 import top.wkbin.taixu.harness.HostToolRequest
 import top.wkbin.taixu.harness.LinuxCommandToolBackend
 import top.wkbin.taixu.harness.PromptAssetToolBackend
+import top.wkbin.taixu.harness.SearchWebToolBackend
 import top.wkbin.taixu.harness.ToolExecutor
 import top.wkbin.taixu.harness.ToolExecutionRequest
 import top.wkbin.taixu.harness.ToolResult
@@ -81,6 +82,14 @@ internal val toolBackendModule = module {
             mutationSnapshots = get(),
             environments = get(),
         )
+    }
+    single {
+        top.wkbin.taixu.harness.websearch.WebSearchProviders(
+            listOf(top.wkbin.taixu.harness.websearch.BingSearchProvider(get<okhttp3.OkHttpClient>())),
+        )
+    }
+    single {
+        SearchWebToolBackend(providers = get())
     }
     single {
         ContextMemoryToolBackend(
@@ -162,6 +171,27 @@ internal val toolBackendModule = module {
             },
         )
     }
+    // 自动会话标题：模型解析与补全走 ProviderClient 的窄端口（测试用 lambda 打桩）。
+    single<top.wkbin.taixu.harness.session.SessionTitleModelPort> {
+        val providerClient = get<top.wkbin.taixu.harness.ProviderClient>()
+        top.wkbin.taixu.harness.session.SessionTitleModelPort { modelId, variant, messages ->
+            providerClient.chat(providerClient.resolveConfigured(modelId, variant), messages).content
+        }
+    }
+    single<top.wkbin.taixu.harness.session.SessionTitleLog> {
+        val appLogger = get<top.wkbin.taixu.core.common.logging.AppLogger>()
+        object : top.wkbin.taixu.harness.session.SessionTitleLog {
+            override fun info(message: String) = appLogger.i(message)
+            override fun error(message: String, failure: Throwable) = appLogger.e(message, failure)
+        }
+    }
+    single {
+        top.wkbin.taixu.harness.session.SessionTitleGenerator(
+            sessions = get(),
+            modelPort = get(),
+            log = get(),
+        )
+    }
     single<ToolExecutor> {
         ToolExecutor(
             fileAccess = get(),
@@ -171,6 +201,7 @@ internal val toolBackendModule = module {
             hostToolBackend = get(),
             linuxCommandToolBackend = get(),
             downloadToolBackend = get(),
+            searchWebToolBackend = get(),
             contextMemoryToolBackend = get(),
             askUserToolBackend = get(),
             promptAssetToolBackend = get(),

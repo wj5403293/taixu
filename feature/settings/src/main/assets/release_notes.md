@@ -10,7 +10,7 @@
 - **端侧离线翻译**：深度集成 Google ML Kit 端侧离线翻译能力，支持自动语言识别与模型离线下载进度展示，无需 API Key 即可进行精准双向翻译。
 - **Material You 壁纸动态取色**：深度支持 Android 系统壁纸动态取色与实时刷新，保留“澄明 (Liquid Glass)”毛玻璃与“Material You”原生质感双主题自由切换。
 - **Agent Harness 架构进化**：
-  - 吸收 RikkaHub / Pi 最佳实践，提供容错编辑、Prompt Caching、视觉直通与干净重试机制。
+  - 吸收业界最佳实践，提供容错编辑、Prompt Caching、视觉直通与干净重试机制。
   - 补齐 `.agents/skills` 发现机制、停止保留内容与 Prompt Cache 开关与 TTL 自定义。
   - 实装 Split-Turn 角色桥接与机械摘要文件足迹，补齐可选工程能力。
   - 消除压缩快照内嵌转义与全分支加载引起的 512MB 内存溢出（OOM）。

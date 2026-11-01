@@ -42,6 +42,7 @@ coreSplashscreen = "1.2.0"
 # Baseline Profile：启动时预编译热点方法，治首次冷启动 JIT 现场编译慢
 baselineprofile = "1.5.0"
 profileinstaller = "1.4.1"
+exifinterface = "1.3.7"
 uiautomator = "2.4.0"
 # JGit（MGit 同源技术栈）：宿主侧直接管理工作区 Git 仓库，无需沙箱 git
 jgit = "6.10.1.202505221210-r"
@@ -117,6 +118,7 @@ asm-analysis = { group = "org.ow2.asm", name = "asm-analysis", version.ref = "as
 # Baseline Profile 生成与安装
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "baselineprofile" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 androidx-test-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }

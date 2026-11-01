@@ -89,7 +89,7 @@ class AgentSkillRepository(
      * 无需通过 ZIP 逐个导入。按 resourcePath 去重，重复调用安全。
      *
      * 发现 Skill 入口后即停止向其内部扫描，子文档由主 Skill 按需读取。
-     * 无主入口的集合目录（如 rikkahub / aicode 的整个 skills 目录）仍递归发现独立技能。
+     * 无主入口的集合目录（如 aicode 等工具的整个 skills 目录）仍递归发现独立技能。
      * 同步移除旧版误注册的子资源条目，仅清理数据库记录，保留资源文件。
      *
      * @return 本次新注册的 Skill 列表

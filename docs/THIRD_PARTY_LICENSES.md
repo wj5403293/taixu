@@ -18,6 +18,7 @@
 | Ktor Client | HTTP 客户端（Agent 流式）与下载 | Maven Central，版本见 `gradle/libs.versions.toml` | Apache License 2.0 |
 | Kotlin / Kotlinx Serialization / Coroutines | 应用基础运行库 | Maven Central，版本见 `gradle/libs.versions.toml` | 按各组件上游许可证与 NOTICE 要求分发 |
 | Koin | 依赖注入 | Maven Central，版本见 `gradle/libs.versions.toml` | Apache-2.0 |
+| AndroidX ExifInterface | 附件图片 EXIF 方向归一（压缩前校正相机旋转/镜像） | Maven Central，`androidx.exifinterface:exifinterface:1.3.7`（版本见 `gradle/libs.versions.toml`） | Apache License 2.0；随 AndroidX 清单分发 |
 | Room | 本地数据库 | Google Maven，版本见 `gradle/libs.versions.toml` | 按上游许可证与 NOTICE 要求分发 |
 | Agency Agents（软件研发精选目录） | 内置子智能体人格与专业工作流；按 9 个研发部门提供 136 个角色 | `msitarzewski/agency-agents`，固定提交 `3c9588880b7cafaec325a104899fd8bbe27e7d72` | MIT；原始 Markdown 与完整许可证随 APK 置于 `agency_agents/` assets，应用仅精选软件研发相关角色 |
 | Android Skills（Google 官方 Android 技能目录） | `android-skills` 本地插件携带的 33 个官方技能（SKILL.md + references），落到 `/attachments/skills/android-skills` 供 Agent 按需加载 | `android/skills`，固定提交 `95ea931a1ad8f9b2be132ae0cfb2aad964d71118`（上游 `android-skills` 插件版本 `1.0.16`）；由 `tools/vendor-android-skills-plugin.py` 生成，逐文件 SHA-256 见插件 `payload/checksums/SHA256SUMS` | Apache-2.0；原文按 LF 入库（`assets/plugins/android-skills/payload/skills/`），完整许可证随插件置于 `payload/licenses/android-skills-LICENSE.txt` |

@@ -29,7 +29,7 @@ internal fun rememberChatInputBlurEnabled(): Boolean {
 }
 
 /**
- * 输入区容器背景效果（参考 rikkahub chatInputHaze）：开关关闭时原样返回；
+ * 输入区容器背景效果：开关关闭时原样返回；
  * 开启时容器自身需保持透明，模糊铺底与着色由效果负责。
  */
 @Composable

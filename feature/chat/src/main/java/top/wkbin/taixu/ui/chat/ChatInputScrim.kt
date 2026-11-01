@@ -10,7 +10,7 @@ import top.wkbin.taixu.ui.theme.chatBackdropChrome
 import top.wkbin.taixu.ui.theme.LocalChatBackgroundActive
 
 /**
- * 输入区底部渐变遮罩（参考 rikkahub ChatInput）：从透明渐变到聊天底色，
+ * 输入区底部渐变遮罩：从透明渐变到聊天底色，
  * 消息滚动到输入区下方时不会生硬穿出；键盘弹起时实色区域正好补齐键盘上沿
  * 到内容之间的空隙。自定义背景时不绘制，让输入区外及系统导航栏直接透出全屏背景。
  */

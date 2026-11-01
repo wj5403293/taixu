@@ -41,6 +41,7 @@ object ToolStatusDescriber {
             }
         }
         HarnessTool.DOWNLOAD -> arg(args, "destination")?.let { "下载文件：${it.takeLast(MAX_STATUS_ARG_LENGTH)}" } ?: "下载文件"
+        HarnessTool.SEARCH_WEB -> "正在联网搜索：${arg(args, "query")?.take(MAX_STATUS_ARG_LENGTH).orEmpty()}"
         HarnessTool.READ -> arg(args, "path")?.let { "读取文件：${it.takeLast(MAX_STATUS_ARG_LENGTH)}" } ?: "读取文件"
         HarnessTool.WRITE -> arg(args, "path")?.let { "写入文件：${it.takeLast(MAX_STATUS_ARG_LENGTH)}" } ?: "写入文件"
         HarnessTool.EDIT -> arg(args, "path")?.let { "编辑文件：${it.takeLast(MAX_STATUS_ARG_LENGTH)}" } ?: "编辑文件"

@@ -39,7 +39,8 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 import java.util.concurrent.atomic.AtomicInteger
-import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.harness.websearch.StubSearchProvider
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -74,6 +75,7 @@ class CapabilityScriptPolicyTest {
             askUserToolBackend = AskUserToolBackend(ApprovalPolicyEngine(paths), approvals),
             promptAssetToolBackend = PromptAssetToolBackend(),
             harnessServiceToolBackend = HarnessServiceToolBackend(),
+            searchWebToolBackend = SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             capabilityToolGateway = CapabilityToolGateway(mcp) { _, _, _, _ -> error("unexpected host dispatch") },
             approvalRepository = approvals, sessionDao = sessions, toolCheckpoints = ToolCheckpoints(hooks), mcpManager = mcp)
     }

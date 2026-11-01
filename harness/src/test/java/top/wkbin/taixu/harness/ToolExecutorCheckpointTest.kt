@@ -43,7 +43,8 @@ import top.wkbin.taixu.harness.projection.SessionMessageProjector
 import top.wkbin.taixu.harness.projection.SessionStateMirrors
 import top.wkbin.taixu.harness.session.SessionTreeStore
 import top.wkbin.taixu.harness.validation.ToolCallLoopDetector
-import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.runtime.LinuxRuntime
+import top.wkbin.taixu.harness.websearch.StubSearchProvider
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -94,6 +95,7 @@ class ToolExecutorCheckpointTest {
             askUserToolBackend = AskUserToolBackend(ApprovalPolicyEngine(paths), approvals),
             promptAssetToolBackend = PromptAssetToolBackend(),
             harnessServiceToolBackend = HarnessServiceToolBackend(),
+            searchWebToolBackend = SearchWebToolBackend(top.wkbin.taixu.harness.websearch.WebSearchProviders(listOf(StubSearchProvider()))),
             capabilityToolGateway = CapabilityToolGateway(null) { _, _, _, _ -> error("unexpected host dispatch") },
             approvalRepository = approvals, sessionDao = sessions,
             toolCheckpoints = ToolCheckpoints(listOf(hook)),

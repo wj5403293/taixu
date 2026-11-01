@@ -42,6 +42,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 import android.graphics.Bitmap
+import androidx.exifinterface.media.ExifInterface
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.Log
@@ -58,6 +59,8 @@ data class ChatAttachment(
     val uri: Uri,
     val hostFilePath: String? = null,
     val guestFilePath: String? = null,
+    /** 文档类附件（.docx）的抽取文本挂载路径（/attachments/xxx.txt）；Agent 可 read */
+    val extractedTextGuestPath: String? = null,
     val base64DataUrl: String? = null,
 ) {
     val localFilePath: String get() = guestFilePath ?: hostFilePath.orEmpty()
@@ -146,7 +149,9 @@ object AttachmentHelper {
                     if (bitmap != null) {
                         val baos = ByteArrayOutputStream()
                         try {
-                            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
+                            // BitmapFactory 不读 EXIF：带方向元数据的相机照片须先归一，否则模型看到横竖颠倒的图
+                            val oriented = applyExifOrientation(bitmap, targetFile.absolutePath)
+                            oriented.compress(Bitmap.CompressFormat.JPEG, 80, baos)
                         } finally {
                             bitmap.recycle()
                         }
@@ -163,6 +168,10 @@ object AttachmentHelper {
                 }.getOrNull()
             } else null
 
+            // 文档类附件（.docx）挂载即抽取正文为同名 .txt：Agent read 二进制 OOXML 全是乱码
+            val extractedTextGuestPath = if (!isImage && name.endsWith(".docx", ignoreCase = true)) {
+                DocxTextExtractor.writeSidecarText(targetFile)?.let { "/attachments/${it.name}" }
+            } else null
             AttachmentProcessResult.Success(
                 ChatAttachment(
                     name = name,
@@ -171,6 +180,7 @@ object AttachmentHelper {
                     uri = uri,
                     hostFilePath = targetFile.absolutePath,
                     guestFilePath = guestPath,
+                    extractedTextGuestPath = extractedTextGuestPath,
                     base64DataUrl = base64,
                 ),
             )
@@ -195,6 +205,16 @@ object AttachmentHelper {
         runCatching { File(path).delete() }
             .onFailure { Log.w(TAG, "删除附件 host 文件失败 path=$path", it) }
     }
+
+    /**
+     * 粘贴超长文本 → txt 附件：与图片附件同目录
+     * （linux-runtime/attachments，PRoot 挂 /attachments），guest 路径由调用方拼装。
+     * 写入失败返回 null（调用方放行原文插入输入框）。
+     */
+    fun writePastedText(context: Context, text: String): File? = runCatching {
+        val attachmentsDir = File(context.filesDir, "linux-runtime/attachments").apply { mkdirs() }
+        File(attachmentsDir, "${System.currentTimeMillis()}_paste.txt").apply { writeText(text) }
+    }.onFailure { Log.w(TAG, "粘贴文本落盘失败", it) }.getOrNull()
 
     /** 纯聚合：按 TooLarge/Failed 计数拼装提示；无异常时返回 null（保持单测不依赖 Context） */
     internal fun buildAttachmentNotice(
@@ -233,6 +253,30 @@ object AttachmentHelper {
             bytes < 1024 * 1024 -> "${bytes / 1024} KB"
             else -> String.format(Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
         }
+    }
+
+    /**
+     * EXIF 方向归一：按文件的方向元数据旋转位图（BitmapFactory 忽略 EXIF）。
+     * 覆盖相机常见的旋转四态与镜像四态；无元数据或解析失败原样返回（不 recycle 入参）。
+     */
+    private fun applyExifOrientation(bitmap: Bitmap, path: String): Bitmap {
+        val orientation = runCatching {
+            ExifInterface(path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+        val matrix = android.graphics.Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.postScale(-1f, 1f)
+            ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.postScale(1f, -1f)
+            ExifInterface.ORIENTATION_TRANSPOSE -> { matrix.postRotate(90f); matrix.postScale(-1f, 1f) }
+            ExifInterface.ORIENTATION_TRANSVERSE -> { matrix.postRotate(270f); matrix.postScale(-1f, 1f) }
+            else -> return bitmap
+        }
+        return runCatching {
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        }.getOrDefault(bitmap)
     }
 }
 

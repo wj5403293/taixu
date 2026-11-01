@@ -9,8 +9,6 @@ interface RequestDiagnosticsRepository {
     fun read(): String?
     fun write(redactedArchive: String)
 }
-
-/** Stable persistence ports consumed by feature, harness, and runtime layers. */
 interface HarnessSessionRepository {
     suspend fun bindExecutionTarget(id: String, target: String): String? {
         val session = findById(id) ?: return null
@@ -27,6 +25,7 @@ interface HarnessSessionRepository {
     suspend fun setApprovalModeForAll(approvalMode: String, updatedAt: Long)
     suspend fun setRunMode(id: String, runMode: String, updatedAt: Long)
     suspend fun setModelSelection(id: String, modelId: String?, modelVariant: String?, updatedAt: Long)
+    suspend fun setPinned(id: String, pinnedAt: Long)
     suspend fun deleteSession(id: String)
     suspend fun countInRange(start: Long?, end: Long?): Int
     suspend fun listAll(): List<HarnessSessionEntity>

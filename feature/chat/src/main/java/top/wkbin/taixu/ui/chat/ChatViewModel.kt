@@ -11,6 +11,8 @@ import top.wkbin.taixu.core.model.RunningSendMode
 import top.wkbin.taixu.core.database.AiModelRepository
 import top.wkbin.taixu.core.database.AiModelEntity
 import top.wkbin.taixu.core.database.HarnessSessionRepository
+import top.wkbin.taixu.core.database.HarnessRuntimeRepository
+import top.wkbin.taixu.core.database.MessageSearchHitRow
 import top.wkbin.taixu.core.database.HarnessSessionEntity
 import top.wkbin.taixu.core.database.AgentSkillRepository
 import top.wkbin.taixu.core.database.McpServerRepository
@@ -140,6 +142,8 @@ class ChatViewModel(
     private val mcpServerRepository: McpServerRepository,
     private val approvalRepository: AgentApprovalRepository,
     private val agentContextDao: AgentContextRepository,
+    private val runtimeRepository: HarnessRuntimeRepository,
+    private val titleGenerator: top.wkbin.taixu.harness.session.SessionTitleGenerator,
     private val compactionManager: CompactionManager,
     private val contextMemoryBackend: top.wkbin.taixu.harness.ContextMemoryToolBackend,
     private val sessionModelSwitcher: SessionModelSwitcher,
@@ -163,8 +167,7 @@ class ChatViewModel(
     val failureMemoryAccess get() = operationCoordinator.failureMemories
     private val _workflowLaunchRequests = MutableSharedFlow<WorkflowLaunchRequest>(extraBufferCapacity = 2)
     val workflowLaunchRequests: SharedFlow<WorkflowLaunchRequest> = _workflowLaunchRequests
-    private val _workflowSuggestions = MutableStateFlow<List<ProactiveWorkflowSuggestion>>(emptyList())
-    val workflowSuggestions: StateFlow<List<ProactiveWorkflowSuggestion>> = _workflowSuggestions.asStateFlow()
+    private val _workflowSuggestions = MutableStateFlow<List<ProactiveWorkflowSuggestion>>(emptyList()); val workflowSuggestions: StateFlow<List<ProactiveWorkflowSuggestion>> = _workflowSuggestions.asStateFlow()
 
     /** 模型回复里引用的沙箱绝对路径（如 /workspace/xxx.jpg）到宿主真实目录的映射，供聊天媒体渲染把 PRoot 内路径翻译成 Android 可读文件。 */
     val sandboxHostRoots: Map<String, File> = mapOf(
@@ -240,8 +243,7 @@ class ChatViewModel(
     val workspace: StateFlow<String> = harnessLoop.workspace
     val projectType: StateFlow<String> = harnessLoop.projectType
     /** 基于当前工作区内容自动推荐的 MCP 预设（已启用的已过滤），仅提示不自动启用。 */
-    val mcpRecommendations: StateFlow<List<McpWorkspaceRecommender.Recommendation>> =
-        harnessLoop.mcpRecommendations
+    val mcpRecommendations: StateFlow<List<McpWorkspaceRecommender.Recommendation>> = harnessLoop.mcpRecommendations
 
     fun enableMcpRecommendation(presetId: String) = harnessLoop.enableRecommendedMcp(presetId)
     fun dismissMcpRecommendation(presetId: String) = harnessLoop.dismissMcpRecommendation(presetId)
@@ -424,9 +426,7 @@ class ChatViewModel(
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** 全量长期记忆（memory 工具写入），供记忆抽屉管理与模型上下文核对。 */
-    val memories: StateFlow<List<AgentMemoryEntity>> =
-        agentContextDao.observeAllMemories()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val memories: StateFlow<List<AgentMemoryEntity>> = agentContextDao.observeAllMemories().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val scratchpadRefresh = MutableStateFlow(0)
 
@@ -525,13 +525,10 @@ class ChatViewModel(
     val chatRoundCollapse: StateFlow<Boolean> = settingsDataStore.chatRoundCollapse
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    fun navigateToAgentSettings() {
-        globalNavigationBus?.navigateTo(AppNavigationTarget.AgentSettings)
-    }
+    fun navigateToAgentSettings() = globalNavigationBus?.navigateTo(AppNavigationTarget.AgentSettings)
 
     // 输入草稿：同步写入 SavedStateHandle，进程重建 / 旋转后可恢复
-    private val _input = MutableStateFlow(savedStateHandle.get<String>(KEY_INPUT_DRAFT) ?: "")
-    val input: StateFlow<String> = _input.asStateFlow()
+    private val _input = MutableStateFlow(savedStateHandle.get<String>(KEY_INPUT_DRAFT) ?: ""); val input: StateFlow<String> = _input.asStateFlow()
 
     /** 统一输入写入入口：StateFlow 供组合使用，SavedStateHandle 供状态恢复使用 */
     private fun setInput(value: String) {
@@ -823,8 +820,7 @@ class ChatViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** 当前会话中明确被用户手动钉选常驻的技能与 MCP ID 集合（默认为空，不默认常驻）。 */
-    private val _pinnedMentionIds = MutableStateFlow<Set<String>>(emptySet())
-    val pinnedMentionIds: StateFlow<Set<String>> = _pinnedMentionIds.asStateFlow()
+    private val _pinnedMentionIds = MutableStateFlow<Set<String>>(emptySet()); val pinnedMentionIds: StateFlow<Set<String>> = _pinnedMentionIds.asStateFlow()
 
     /** 当前会话中已钉选常驻的技能与 MCP 列表（默认为空，仅在用户显式钉选后常驻展示并生效）。 */
     val pinnedCapabilities: StateFlow<List<MentionItem>> = combine(
@@ -895,8 +891,7 @@ class ChatViewModel(
         matchedSkills + matchedMcps
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _initializing = MutableStateFlow(true)
-    val initializing: StateFlow<Boolean> = _initializing.asStateFlow()
+    private val _initializing = MutableStateFlow(true); val initializing: StateFlow<Boolean> = _initializing.asStateFlow()
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -911,35 +906,28 @@ class ChatViewModel(
             }
             _initializing.value = false
         }
+        viewModelScope.launch { // 自动标题：开关/提示词/模型档案均可配（生成器内部去重）
+            harnessLoop.running.collect { isRunning ->
+                if (isRunning || !settingsDataStore.autoTitleEnabled.first()) return@collect
+                titleGenerator.maybeGenerate(harnessLoop.currentSessionId.value, harnessLoop.messages.value,
+                    promptOverride = settingsDataStore.autoTitlePrompt.first(), modelIdOverride = settingsDataStore.autoTitleModelId.first().ifBlank { null })
+            }
+        }
     }
 
-    fun onInputChanged(value: String) {
-        setInput(value)
-    }
+    fun onInputChanged(value: String) = setInput(value)
 
     fun applySlashCommand(command: SlashCommandItem) {
-        if (command.command == "/clear") {
-            createSession(context.getString(R.string.chat_new_session))
-            setInput("")
-            notifyNewSessionCreated()
-        } else {
-            setInput(command.template)
-        }
+        if (command.command == "/clear") { createSession(context.getString(R.string.chat_new_session)); setInput(""); notifyNewSessionCreated() }
+        else setInput(command.template)
     }
 
     fun applyQuickPhrase(phrase: QuickPhrase) {
-        if (phrase.content.trim() == "/clear") {
-            createSession(context.getString(R.string.chat_new_session))
-            setInput("")
-            notifyNewSessionCreated()
-        } else {
-            setInput(phrase.content)
-        }
+        if (phrase.content.trim() == "/clear") { createSession(context.getString(R.string.chat_new_session)); setInput(""); notifyNewSessionCreated() }
+        else setInput(phrase.content)
     }
 
-    private fun notifyNewSessionCreated() {
-        Toast.makeText(context, context.getString(R.string.chat_new_session_created), Toast.LENGTH_SHORT).show()
-    }
+    private fun notifyNewSessionCreated() = Toast.makeText(context, context.getString(R.string.chat_new_session_created), Toast.LENGTH_SHORT).show()
 
     fun applyMention(item: MentionItem) {
         val text = _input.value
@@ -973,8 +961,7 @@ class ChatViewModel(
     val pendingAttachments: StateFlow<List<ChatAttachment>> = _pendingAttachments.asStateFlow()
 
     /** 附件处理中（复制/压缩/编码期间为 true，UI 据此展示加载指示） */
-    private val _attachmentsProcessing = MutableStateFlow(false)
-    val attachmentsProcessing: StateFlow<Boolean> = _attachmentsProcessing.asStateFlow()
+    private val _attachmentsProcessing = MutableStateFlow(false); val attachmentsProcessing: StateFlow<Boolean> = _attachmentsProcessing.asStateFlow()
 
     /** 需要以 Toast 提示用户的轻量通知（附件失败、模型档案已存在等），展示后调用 clearNotice() */
     /** 手动压缩当前会话历史为结构化摘要（"+" 附件弹窗入口）。 */
@@ -1004,22 +991,28 @@ class ChatViewModel(
     }
 
     fun removeAttachment(attachment: ChatAttachment) {
-        _pendingAttachments.update { list -> list.filter { it.id != attachment.id } }
-        AttachmentHelper.deleteHostFile(attachment.hostFilePath)
+        _pendingAttachments.update { list -> list.filter { it.id != attachment.id } }; AttachmentHelper.deleteHostFile(attachment.hostFilePath)
     }
 
-    /** 组装附件挂载说明并委托 send() 发送；View 只需在输入框非空或有附件时触发 */
-    fun sendFromComposer() {
+    /** 粘贴超长文本 → txt 附件，避免大段内容刷屏。 */
+    fun addTextAttachment(text: String) {
+        val file = AttachmentHelper.writePastedText(context, text) ?: return
+        _pendingAttachments.update { it + ChatAttachment(name = file.name, isImage = false, sizeBytes = file.length(),
+            uri = android.net.Uri.fromFile(file), hostFilePath = file.absolutePath, guestFilePath = "/attachments/${file.name}") }
+    }
+
+    /** 组装附件挂载说明并委托 send() 发送；View 只需在输入框非空或有附件时触发。answer=false = 只发不答 */
+    fun sendFromComposer(answer: Boolean = true) {
         val trimmedInput = _input.value.trim()
         val attachments = _pendingAttachments.value
         if (trimmedInput.isBlank() && attachments.isEmpty()) return
         val imageUrls = attachments.mapNotNull { it.base64DataUrl }
         val fullMessage = buildComposerMessage(context, trimmedInput, attachments)
         _pendingAttachments.value = emptyList()
-        send(fullMessage, imageUrls)
+        send(fullMessage, imageUrls, answer)
     }
 
-    fun send(customText: String? = null, imageUrls: List<String> = emptyList()) {
+    fun send(customText: String? = null, imageUrls: List<String> = emptyList(), answer: Boolean = true) {
         val rawText = (customText ?: _input.value).trim()
         if (rawText.isBlank() && imageUrls.isEmpty()) return
         WORKFLOW_COMMAND.matchEntire(rawText)?.let { match ->
@@ -1051,8 +1044,11 @@ class ChatViewModel(
             rawText
         }
 
+        // 只发不答（长按 answer=false）：仅追加用户消息不触发推理；命令语义保持常规发送，忙时退化为队列。
+        val appendOnly = shouldAppendOnly(answer, rawText)
         if (!running.value) {
-            harnessLoop.send(effectiveText, imageUrls = imageUrls)
+            if (appendOnly) harnessLoop.appendOnly(effectiveText, imageUrls = imageUrls)
+            else harnessLoop.send(effectiveText, imageUrls = imageUrls)
         } else {
             // 运行中投递语义跟随「运行中发送方式」偏好；send() 非挂起函数，故读 stateIn 快照。
             // STEER 在当前这批工具调用完成后、下一轮推理开始前注入，不打断正在执行的工具调用。
@@ -1064,7 +1060,7 @@ class ChatViewModel(
     }
 
     private companion object {
-        val WORKFLOW_COMMAND = Regex("^/wf(?:\\s+([A-Za-z0-9_.-]+))?\$")
+        const val MESSAGE_SEARCH_LIMIT = 30
     }
 
     /** 创建针对工具安装或沙箱异常的专属自愈会话并立即启动诊断 */
@@ -1155,17 +1151,18 @@ class ChatViewModel(
         }
     }
 
-    fun switchSession(id: String) {
-        viewModelScope.launch { harnessLoop.loadSession(id) }
-    }
+    fun switchSession(id: String) = viewModelScope.launch { harnessLoop.loadSession(id) }
 
-    fun deleteSession(id: String) {
-        sessionDeletionFeedback.delete(viewModelScope, harnessLoop, id, context.getString(R.string.chat_request_archive_delete_error))
-    }
+    /** 跨会话消息全文搜索（会话侧栏「消息命中」分组，防抖在 UI 层）；空词返回空。 */
+    suspend fun searchMessages(term: String): List<MessageSearchHitRow> = runCatching {
+        runtimeRepository.searchMessages(term, MESSAGE_SEARCH_LIMIT)
+    }.getOrDefault(emptyList())
 
-    fun renameSession(id: String, title: String) {
-        viewModelScope.launch { harnessLoop.renameSession(id, title) }
-    }
+    fun deleteSession(id: String) = sessionDeletionFeedback.delete(viewModelScope, harnessLoop, id, context.getString(R.string.chat_request_archive_delete_error))
+
+    /** 会话置顶（抽屉置顶分区；pinned=false 取消） */
+    fun setSessionPinned(id: String, pinned: Boolean) = viewModelScope.launch { sessionDao.setPinned(id, if (pinned) System.currentTimeMillis() else 0L) }
+    fun renameSession(id: String, title: String) = viewModelScope.launch { harnessLoop.renameSession(id, title) }
 
     // ---- 撤回到此轮（Checkpoint Rewind） ----
 

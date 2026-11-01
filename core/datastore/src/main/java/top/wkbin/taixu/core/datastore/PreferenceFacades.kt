@@ -175,6 +175,12 @@ class AgentPreferences(private val store: SettingsDataStore) {
     val maxToolRounds get() = store.maxToolRounds
     val roundLimitAutoContinuations get() = store.roundLimitAutoContinuations
     val autoWorkspaceCwd get() = store.autoWorkspaceCwd
+    val autoTitleEnabled get() = store.autoTitleEnabled
+    val autoTitlePrompt get() = store.autoTitlePrompt
+    val autoTitleModelId get() = store.autoTitleModelId
+    suspend fun setAutoTitleEnabled(value: Boolean) = store.setAutoTitleEnabled(value)
+    suspend fun setAutoTitlePrompt(value: String) = store.setAutoTitlePrompt(value)
+    suspend fun setAutoTitleModelId(value: String) = store.setAutoTitleModelId(value)
     val commandOutputCompressionEnabled get() = store.commandOutputCompressionEnabled
     val baseCommandTimeoutSeconds get() = store.baseCommandTimeoutSeconds
     val firstResponseTimeoutSeconds get() = store.firstResponseTimeoutSeconds

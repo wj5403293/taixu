@@ -21,7 +21,7 @@ import top.wkbin.taixu.ui.components.RuntimeIcon
 import top.wkbin.taixu.ui.components.RuntimeIconName
 
 /**
- * "+" 附件弹窗（参考 rikkahub FilesPicker）：顶部附件宫格（相册图片 / 草图 / 文件），
+ * "+" 附件弹窗：顶部附件宫格（相册图片 / 草图 / 文件），
  * 下方分段入口（扩展管理、压缩对话）。拍照/音视频暂不提供，需要时按格扩展。
  */
 @Composable

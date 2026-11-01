@@ -62,6 +62,8 @@ internal fun SessionsSideDrawer(
     onDelete: (String) -> Unit,
     onRename: (String, String) -> Unit,
     onCollapse: (() -> Unit)? = null, navigationContent: @Composable () -> Unit = {},
+    searchMessages: suspend (String) -> List<top.wkbin.taixu.core.database.MessageSearchHitRow> = { emptyList() },
+    onTogglePin: (String, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     if (!visible) return
@@ -72,17 +74,22 @@ internal fun SessionsSideDrawer(
     var projectsExpanded by rememberSaveable { mutableStateOf(true) }
     // Search reveals matching projects without overwriting the user's normal collapsed state.
     var searchProjectsExpanded by rememberSaveable(query.isNotBlank()) { mutableStateOf(true) }
-    val (partition, botMatches) = remember(sessions, botSessions, botSessionGroups, hiddenBotSessionIds, workspaces, query) {
+    val (partition, botMatches, pinnedMatches) = remember(sessions, botSessions, botSessionGroups, hiddenBotSessionIds, workspaces, query) {
         val term = query.trim()
         fun HarnessSessionEntity.matches() = term.isEmpty() ||
             title.contains(term, ignoreCase = true) || workspace.contains(term, ignoreCase = true)
-        val filtered = sessions.filter { it.matches() }
+        val filtered = sessions.filter { it.matches() && it.pinnedAt == 0L }
+        val pinnedMatches = sessions.filter { it.matches() && it.pinnedAt != 0L }.sortedByDescending { it.pinnedAt }
         val result = partitionSessions(filtered, workspaces)
         val bots = botSessions.filter { it.matches() && it.id !in hiddenBotSessionIds }
             // 私有/独立会话默认不进抽屉（Bot 详情页可直达），搜索时才作为历史入口出现。
             .filter { term.isNotEmpty() || it.id in botSessionGroups }
             .sortedByDescending { it.updatedAt }
-        (if (term.isEmpty()) result else result.copy(projectGroups = result.projectGroups.filter { it.sessions.isNotEmpty() })) to bots
+        Triple(
+            if (term.isEmpty()) result else result.copy(projectGroups = result.projectGroups.filter { it.sessions.isNotEmpty() }),
+            bots,
+            pinnedMatches,
+        )
     }
     val hiddenBotSessions = remember(botSessions, hiddenBotSessionIds) {
         botSessions.filter { it.id in hiddenBotSessionIds }.sortedByDescending { it.updatedAt }
@@ -125,7 +132,7 @@ internal fun SessionsSideDrawer(
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                if (query.isNotBlank() && partition.projectGroups.isEmpty() && partition.recentSessions.isEmpty() && botMatches.isEmpty()) {
+                if (query.isNotBlank() && partition.projectGroups.isEmpty() && partition.recentSessions.isEmpty() && botMatches.isEmpty() && pinnedMatches.isEmpty()) {
                     Text(stringResource(R.string.chat_drawer_no_matches),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
                         style = MaterialTheme.typography.bodySmall,
@@ -138,10 +145,22 @@ internal fun SessionsSideDrawer(
                         onOpen = { onSwitch(attentionSessions.first().id) },
                     )
                 }
+                if (pinnedMatches.isNotEmpty()) {
+                    PinnedSessionsSection(
+                        pinnedSessions = pinnedMatches,
+                        currentSessionId = currentSessionId,
+                        sessionRunStates = sessionRunStates,
+                        onSwitch = onSwitch,
+                        onTogglePin = onTogglePin,
+                        onRename = { id -> renameTargetId = id },
+                        onDelete = { id -> deleteTargetId = id },
+                    )
+                }
                 if (partition.projectGroups.isNotEmpty()) {
                     ProjectSection(
                         projectGroups = partition.projectGroups,
                         sectionExpanded = if (query.isBlank()) projectsExpanded else searchProjectsExpanded,
+                        onTogglePin = onTogglePin,
                         onToggleSection = {
                             if (query.isBlank()) projectsExpanded = !projectsExpanded
                             else searchProjectsExpanded = !searchProjectsExpanded
@@ -184,6 +203,9 @@ internal fun SessionsSideDrawer(
                     )
                 }
 
+                if (query.isNotBlank()) {
+                    SessionMessageHits(query = query, search = searchMessages, onSwitch = { onSwitch(it); onDismiss() })
+                }
                 if (query.isBlank() || partition.recentSessions.isNotEmpty()) {
                     RecentSection(
                         recentSessions = partition.recentSessions,
@@ -192,6 +214,7 @@ internal fun SessionsSideDrawer(
                         onSwitch = onSwitch,
                         onRename = { id -> renameTargetId = id },
                         onDelete = { id -> deleteTargetId = id },
+                        onTogglePin = onTogglePin,
                     )
                 }
 
@@ -256,6 +279,7 @@ private fun RecentSection(
     onSwitch: (String) -> Unit,
     onRename: (String) -> Unit,
     onDelete: (String) -> Unit,
+    onTogglePin: (String, Boolean) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(true) }
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -277,9 +301,37 @@ private fun RecentSection(
                     SessionDrawerItem(session = session, isCurrent = session.id == currentSessionId,
                         runState = sessionRunStates[session.id] ?: SessionRunState.IDLE,
                         onSwitch = { onSwitch(session.id) }, onRename = { onRename(session.id) },
-                        onDelete = { onDelete(session.id) })
+                        onDelete = { onDelete(session.id) }, pinned = session.pinnedAt != 0L,
+                        onTogglePin = { onTogglePin(session.id, session.pinnedAt == 0L) })
                 }
             }
+        }
+    }
+}
+
+/** 置顶分区：pinnedAt 倒序；置顶会话不再出现在项目/最近分区。 */
+@Composable
+private fun PinnedSessionsSection(
+    pinnedSessions: List<HarnessSessionEntity>,
+    currentSessionId: String,
+    sessionRunStates: Map<String, SessionRunState>,
+    onSwitch: (String) -> Unit,
+    onTogglePin: (String, Boolean) -> Unit,
+    onRename: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        SessionSectionHeader(
+            title = stringResource(R.string.chat_drawer_pinned),
+            count = pinnedSessions.size,
+            expanded = true,
+            onToggle = {},
+        )
+        pinnedSessions.forEach { session ->
+            SessionDrawerItem(session = session, isCurrent = session.id == currentSessionId,
+                runState = sessionRunStates[session.id] ?: SessionRunState.IDLE,
+                onSwitch = { onSwitch(session.id) }, onRename = { onRename(session.id) },
+                onDelete = { onDelete(session.id) }, pinned = true, onTogglePin = { onTogglePin(session.id, false) })
         }
     }
 }

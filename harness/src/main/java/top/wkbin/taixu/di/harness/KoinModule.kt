@@ -328,7 +328,7 @@ val harnessModule = module {
 
     single<McpWorkspaceRecommender> { McpWorkspaceRecommender() }
     single { val selection = get<top.wkbin.taixu.runtime.environment.LocalDistributionSelection>(); top.wkbin.taixu.harness.mcp.StandaloneMcpScope(get(), selection::current, selection.changes) }
-    single<McpOAuthCoordinator> { McpOAuthCoordinator(credentials = get(), client = get()) }
+    single<McpOAuthCoordinator> { McpOAuthCoordinator(credentials = get(), client = get(), discovery = top.wkbin.taixu.harness.mcp.oauth.McpOAuthDiscovery(get())) }
 
     single<McpOAuthTokenProvider> { McpOAuthTokenProvider(credentials = get(), coordinator = get()) }
 

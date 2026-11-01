@@ -1227,81 +1227,19 @@ internal fun ModelEditorContent(
 
         // ---- 7. 连通性测试与错误提示 ----
         item {
-            val testModelTarget = selectedModels.firstOrNull() ?: customModelInput.trim()
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                RuntimeOutlinedButton(
-                    onClick = { test(url, testModelTarget, combinedKey, responseApiEnabled, providerId) },
-                    enabled = !testing && url.isNotBlank(),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
-                ) {
-                    if (testing) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            RuntimeCircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Text("正在测试…")
-                        }
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            RuntimeIcon(RuntimeIconName.Play, Modifier.size(16.dp), MaterialTheme.colorScheme.primary)
-                            Text("测试连接")
-                        }
-                    }
-                }
-
-                discoveryError?.let {
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            RuntimeIcon(RuntimeIconName.Alert, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
-                            Text(
-                                text = it,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-
-                testResult?.let { resultMsg ->
-                    val isSuccess = resultMsg == "连接成功"
-                    Surface(
-                        shape = MaterialTheme.shapes.medium,
-                        color = if (isSuccess) successStatusColor().copy(alpha = 0.15f) else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            RuntimeIcon(
-                                name = if (isSuccess) RuntimeIconName.Check else RuntimeIconName.Alert,
-                                modifier = Modifier.size(16.dp),
-                                tint = if (isSuccess) successStatusColor() else MaterialTheme.colorScheme.error,
-                            )
-                            Text(
-                                text = resultMsg,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = if (isSuccess) successStatusColor() else MaterialTheme.colorScheme.error,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-            }
+            ModelConnectionTestBlock(
+                url = url,
+                model = selectedModels.firstOrNull() ?: customModelInput.trim(),
+                apiKey = combinedKey,
+                useResponsesApi = responseApiEnabled,
+                protocol = provider.protocol,
+                providerName = provider.name,
+                providerId = providerId,
+                testing = testing,
+                discoveryError = discoveryError,
+                testResult = testResult,
+                onTest = test,
+            )
         }
 
         // ---- 8. 底部保存按钮 ----

@@ -98,6 +98,7 @@ class DefaultSessionTitleTest {
         override suspend fun findById(id: String) = sessions[id]
         override suspend fun upsert(session: HarnessSessionEntity) { sessions[session.id] = session }
         override suspend fun touch(id: String, updatedAt: Long) = Unit
+        override suspend fun setPinned(id: String, pinnedAt: Long) = Unit
         override suspend fun rename(id: String, title: String, updatedAt: Long) {
             val current = sessions[id] ?: return
             sessions[id] = current.copy(title = title, updatedAt = updatedAt)

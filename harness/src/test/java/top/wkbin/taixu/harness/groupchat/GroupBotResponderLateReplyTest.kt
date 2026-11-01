@@ -257,7 +257,8 @@ class GroupBotResponderLateReplyTest {
 
         override fun send(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun steer(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
-        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun appendOnly(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun cancel(targetSessionId: String?) {
             sessionRunStates.value = mapOf("session" to SessionRunState.IDLE)
         }

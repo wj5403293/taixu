@@ -1,11 +1,15 @@
 package top.wkbin.taixu.ui.chat
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import top.wkbin.taixu.feature.chat.R
@@ -15,8 +19,19 @@ import top.wkbin.taixu.ui.components.*
 internal val ComposerActionSize = 30.dp
 
 @Composable
-internal fun ComposerSendButton(onClick: () -> Unit, enabled: Boolean, containerColor: Color, contentColor: Color) {
-    RuntimeFilledIconButton(onClick, Modifier.minimumInteractiveComponentSize().size(ComposerActionSize), enabled, containerColor = containerColor, contentColor = contentColor,
+internal fun ComposerSendButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    containerColor: Color,
+    contentColor: Color,
+    onLongClick: (() -> Unit)? = null,
+) {
+    // 长按走外层 pointerInput 手势；rememberUpdatedState 防流式重组重启检测器打断进行中的长按
+    val latestLongClick by rememberUpdatedState(onLongClick)
+    val longPressModifier = if (onLongClick != null) {
+        Modifier.pointerInput(Unit) { detectTapGestures(onLongPress = { latestLongClick?.invoke() }) }
+    } else Modifier
+    RuntimeFilledIconButton(onClick, Modifier.minimumInteractiveComponentSize().size(ComposerActionSize).then(longPressModifier), enabled, containerColor = containerColor, contentColor = contentColor,
         contentDescription = stringResource(R.string.chat_send)) {
         RuntimeIcon(RuntimeIconName.ArrowUp, Modifier.size(16.dp))
     }

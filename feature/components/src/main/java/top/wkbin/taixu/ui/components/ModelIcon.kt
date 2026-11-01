@@ -16,7 +16,7 @@ import coil3.request.ImageRequest
 import coil3.svg.css
 
 /**
- * 模型图标体系（移植自 rikkahub 的 AutoAIIcon + AIIconMatcher）：
+ * 模型图标体系：
  * 按模型 id / 供应商名匹配 assets/icons/ 下的厂商图标（SVG 单色会随主题重着色，
  * -color 变体保留品牌色），匹配不到回退 [ProviderBadge] 的品牌色圆底。
  * 图标来源 lobehub（https://lobehub.com/zh/icons）。

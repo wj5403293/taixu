@@ -968,15 +968,8 @@ class ProviderClient internal constructor(
                 ),
             ),
             HostCapabilityDirectory.directHostTool(),
-            ApiToolDefinition(
-                function = ApiFunctionDefinition(
-                    name = "download",
-                    description = "使用内置 HTTPS 下载器把远程文件保存到工作区。支持 HTTP Range 断点续传、自动重试、最大文件大小限制和可选 SHA-256 校验；当前为单连接续传，不是多线程分片。destination 必须位于当前工作区内，不要填写宿主机绝对路径。",
-                    parameters = Json.parseToJsonElement(
-                        """{"type":"object","properties":{"url":{"type":"string","description":"HTTPS 下载地址"},"destination":{"type":"string","description":"工作区内目标路径，例如 dist/tool.tar.gz"},"sha256":{"type":"string","description":"可选 SHA-256 十六进制摘要"},"max_attempts":{"type":"integer","description":"可选最大尝试次数，1-10，默认 3"},"max_bytes":{"type":"integer","description":"可选最大文件大小（字节），默认 1 GiB，最大 4 GiB"}},"required":["url","destination"]}""",
-                    ).jsonObject,
-                ),
-            ),
+            RemoteContentTools.DOWNLOAD,
+            RemoteContentTools.SEARCH_WEB,
             ApiToolDefinition(
                 function = ApiFunctionDefinition(
                     name = "memory",

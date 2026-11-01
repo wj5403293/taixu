@@ -198,7 +198,8 @@ class GroupReplyTaskOwnershipTest {
         }
         override fun send(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun steer(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
-        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun followUp(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
+        override fun appendOnly(text: String, targetSessionId: String?, imageUrls: List<String>) = Unit
         override fun cancel(targetSessionId: String?) { cancellations += targetSessionId; sessionRunStates.value = mapOf("session" to SessionRunState.IDLE) }
         override fun resolveApproval(requestId: String, approved: Boolean, rememberForSession: Boolean) = Unit
         override fun resolveQuestion(requestId: String, answersJson: String) = Unit

@@ -485,7 +485,7 @@ internal fun ReasoningEffortSlider(
             }
         }
 
-        // 步进滑杆：粗短轨道 + 竖条拇指（对齐 rikkahub ReasoningPicker）
+        // 步进滑杆：粗短轨道 + 竖条拇指
         Slider(
             state = sliderState,
             onValueChange = {
@@ -542,7 +542,7 @@ internal fun ReasoningEffortSlider(
     }
 }
 
-/** 档位 → MaterialShapes 形状：档位越高形状越「激烈」，Morph 连续过渡（参考 rikkahub PickerHero）。 */
+/** 档位 → MaterialShapes 形状：档位越高形状越「激烈」，Morph 连续过渡。 */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 private fun reasoningLevelShape(index: Int): androidx.graphics.shapes.RoundedPolygon = when (index) {
     0 -> androidx.compose.material3.MaterialShapes.Circle

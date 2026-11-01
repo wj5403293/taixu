@@ -24,5 +24,6 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.84")
     testImplementation(libs.junit)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.bundles.test.robolectric)
 }
