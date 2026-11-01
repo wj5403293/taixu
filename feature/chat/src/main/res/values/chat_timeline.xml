@@ -37,6 +37,9 @@
     <string name="chat_attachment_extracted">
 已抽取文本版：%s（可用 read 工具读取）</string>
     <string name="chat_unpin_session">取消置顶</string>
+    <string name="chat_export_markdown">导出 Markdown</string>
+    <string name="chat_export_chooser">分享会话导出</string>
+    <string name="chat_export_failed">导出失败，请重试</string>
     <string name="chat_action_memory">管理记忆</string>
     <string name="chat_action_plan">更新任务计划</string>
     <string name="chat_action_scratchpad">更新任务草稿</string>

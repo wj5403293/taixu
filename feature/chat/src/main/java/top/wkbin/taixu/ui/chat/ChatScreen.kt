@@ -246,6 +246,7 @@ fun ChatScreen(
 
     val isImeVisible = WindowInsets.isImeVisible
     val coroutineScope = rememberCoroutineScope()
+    val markdownExporter = rememberMarkdownExporter(messages) // 写 cacheDir/exports 后经 FileProvider 走系统分享
 
     // Navigation3 removes inactive tab content from composition. Persist this marker with the
     // entry so returning to 智枢 does not perform a second, redundant scrollToItem during the
@@ -275,8 +276,7 @@ fun ChatScreen(
         lastSeenMessageCount = messages.size
         if (messages.isNotEmpty()) {
             delay(30)
-            val reposition = initialPositionedSessionKey != currentSessionKey
-            if (reposition) initialPositionedSessionKey = currentSessionKey
+            val reposition = initialPositionedSessionKey != currentSessionKey; if (reposition) initialPositionedSessionKey = currentSessionKey
             if (reposition || followLatest || userSent) listState.safeScrollToAbsoluteBottom()
         }
     }
@@ -357,7 +357,7 @@ fun ChatScreen(
                 onOpenSessions = onOpenNavigation, onOpenBots = { onNavigate(MainDestination.Bots) }, onOpenWorkshop = { onNavigate(MainDestination.Workspace) },
                 onOpenRunModes = { showRunModes = true },
                 onOpenBranches = { showBranches = true },
-                    onOpenRuntime = { showRuntimeTimeline = true }, onOpenMemory = { showMemorySheet = true }, onOpenOutline = { showOutline = true },
+                    onOpenRuntime = { showRuntimeTimeline = true }, onOpenMemory = { showMemorySheet = true }, onOpenOutline = { showOutline = true }, onExportMarkdown = markdownExporter,
                 onOpenBrowser = onOpenBrowser,
                 browserHighlight = browserHighlight,
                 onOpenRepository = onOpenRepository?.let { open ->

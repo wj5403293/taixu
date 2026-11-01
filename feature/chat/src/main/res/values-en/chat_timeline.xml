@@ -37,6 +37,9 @@
     <string name="chat_attachment_extracted">
 Extracted text: %s (readable via the read tool)</string>
     <string name="chat_unpin_session">Unpin</string>
+    <string name="chat_export_markdown">Export Markdown</string>
+    <string name="chat_export_chooser">Share conversation export</string>
+    <string name="chat_export_failed">Export failed, please retry</string>
     <string name="chat_action_memory">Manage memory</string>
     <string name="chat_action_plan">Update task plan</string>
     <string name="chat_action_scratchpad">Update scratchpad</string>
