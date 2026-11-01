@@ -33,7 +33,7 @@ import top.wkbin.taixu.harness.dual.PlannerPromptBuilder
 import top.wkbin.taixu.harness.events.AgentEventLogger
 import top.wkbin.taixu.harness.events.CapabilityEventWriter
 import top.wkbin.taixu.harness.events.HarnessEventBus
-import top.wkbin.taixu.harness.mcp.LinuxMcpStdioChannelFactory; import top.wkbin.taixu.harness.mcp.oauth.McpOAuthDiscovery
+import top.wkbin.taixu.harness.mcp.LinuxMcpStdioChannelFactory
 import top.wkbin.taixu.harness.mcp.McpCommandBuilder
 import top.wkbin.taixu.harness.mcp.McpHttpTransport
 import top.wkbin.taixu.harness.mcp.McpManager
@@ -328,7 +328,7 @@ val harnessModule = module {
 
     single<McpWorkspaceRecommender> { McpWorkspaceRecommender() }
     single { val selection = get<top.wkbin.taixu.runtime.environment.LocalDistributionSelection>(); top.wkbin.taixu.harness.mcp.StandaloneMcpScope(get(), selection::current, selection.changes) }
-    single<McpOAuthCoordinator> { McpOAuthCoordinator(credentials = get(), client = get(), discovery = McpOAuthDiscovery(get())) }
+    single<McpOAuthCoordinator> { McpOAuthCoordinator(credentials = get(), client = get(), discovery = top.wkbin.taixu.harness.mcp.oauth.McpOAuthDiscovery(get())) }
 
     single<McpOAuthTokenProvider> { McpOAuthTokenProvider(credentials = get(), coordinator = get()) }
 

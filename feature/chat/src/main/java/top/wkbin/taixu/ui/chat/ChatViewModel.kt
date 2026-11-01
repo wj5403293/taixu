@@ -1044,9 +1044,8 @@ class ChatViewModel(
             rawText
         }
 
-        // 只发不答（长按发送）：仅追加用户消息不触发推理；命令语义保持常规发送，忙时退化为队列。
-        val appendOnly = answer && WORKFLOW_COMMAND.matchEntire(rawText) == null &&
-            BtwChatController.COMMAND.matchEntire(rawText) == null
+        // 只发不答（长按 answer=false）：仅追加用户消息不触发推理；命令语义保持常规发送，忙时退化为队列。
+        val appendOnly = shouldAppendOnly(answer, rawText)
         if (!running.value) {
             if (appendOnly) harnessLoop.appendOnly(effectiveText, imageUrls = imageUrls)
             else harnessLoop.send(effectiveText, imageUrls = imageUrls)
@@ -1061,7 +1060,6 @@ class ChatViewModel(
     }
 
     private companion object {
-        val WORKFLOW_COMMAND = Regex("^/wf(?:\\s+([A-Za-z0-9_.-]+))?\$")
         const val MESSAGE_SEARCH_LIMIT = 30
     }
 
