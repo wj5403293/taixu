@@ -59,6 +59,8 @@ data class ChatAttachment(
     val uri: Uri,
     val hostFilePath: String? = null,
     val guestFilePath: String? = null,
+    /** 文档类附件（.docx）的抽取文本挂载路径（/attachments/xxx.txt）；Agent 可 read */
+    val extractedTextGuestPath: String? = null,
     val base64DataUrl: String? = null,
 ) {
     val localFilePath: String get() = guestFilePath ?: hostFilePath.orEmpty()
@@ -166,6 +168,10 @@ object AttachmentHelper {
                 }.getOrNull()
             } else null
 
+            // 文档类附件（.docx）挂载即抽取正文为同名 .txt：Agent read 二进制 OOXML 全是乱码
+            val extractedTextGuestPath = if (!isImage && name.endsWith(".docx", ignoreCase = true)) {
+                DocxTextExtractor.writeSidecarText(targetFile)?.let { "/attachments/${it.name}" }
+            } else null
             AttachmentProcessResult.Success(
                 ChatAttachment(
                     name = name,
@@ -174,6 +180,7 @@ object AttachmentHelper {
                     uri = uri,
                     hostFilePath = targetFile.absolutePath,
                     guestFilePath = guestPath,
+                    extractedTextGuestPath = extractedTextGuestPath,
                     base64DataUrl = base64,
                 ),
             )
